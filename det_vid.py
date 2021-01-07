@@ -18,6 +18,9 @@ args = parser.parse_args()
 object_detector = hub.Module(name="yolov3_resnet50_vd_coco2017")
 
 for vid_name in os.listdir(args.input):
+    if not osp.exists(osp.join(args.output, vid_name)):
+        os.makedirs(osp.join(args.output, vid_name))
+
     print("processing {}".format(vid_name))
 
     vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
@@ -31,7 +34,7 @@ for vid_name in os.listdir(args.input):
                 result = object_detector.object_detection(
                     images=img_data,
                     use_gpu=True,
-                    output_dir=args.output,
+                    output_dir=osp.join(args.output, vid_name),
                     visualization=True,
                 )
                 img_data = []
