@@ -27,9 +27,11 @@ for vid_name in os.listdir(args.input):
     success, image = vidcap.read()
     count = 0
     img_data = []
+    frames = []
     while success:
         if count % args.interval == 0:
             img_data.append(image)
+            frames.append(count)
             if len(img_data) == args.bs:
                 result = object_detector.object_detection(
                     images=img_data,
@@ -37,8 +39,17 @@ for vid_name in os.listdir(args.input):
                     output_dir=osp.join(args.output, vid_name),
                     visualization=True,
                 )
+                for res, frame in zip(result, frames):
+                    os.rename(
+                        res["save_path"],
+                        osp.join(args.output, vid_name, str(frame).zfill(6) + ".jpg"),
+                    )
                 img_data = []
+                frames = []
+
                 print(result)
+
         success, image = vidcap.read()
         count += 1
         print(count)
+    input("here")

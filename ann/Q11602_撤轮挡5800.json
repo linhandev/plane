@@ -1,0 +1,82 @@
+{
+  "version": "4.5.6",
+  "flags": {},
+  "shapes": [
+    {
+      "label": "rw",
+      "points": [
+        [
+          231.7073170731707,
+          336.5365853658536
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "point",
+      "flags": {}
+    },
+    {
+      "label": "hd",
+      "points": [
+        [
+          1276.8292682926829,
+          413.36585365853654
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "point",
+      "flags": {}
+    },
+    {
+      "label": "fg",
+      "points": [
+        [
+          1078.0487804878048,
+          597.5121951219512
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "point",
+      "flags": {}
+    },
+    {
+      "label": "rg",
+      "points": [
+        [
+          682.9268292682926,
+          459.70731707317066
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "point",
+      "flags": {}
+    },
+    {
+      "label": "lg",
+      "points": [
+        [
+          909.7560975609755,
+          465.80487804878044
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "point",
+      "flags": {}
+    },
+    {
+      "label": "lw",
+      "points": [
+        [
+          1041.6666666666667,
+          368.8571428571429
+        ]
+      ],
+      "group_id": null,
+      "shape_type": "point",
+      "flags": {}
+    }
+  ],
+  "imagePath": "../frames/Q11602_撤轮挡5800.png",
+  "imageData": null,
+  "imageHeight": 1080,
+  "imageWidth": 1920
+}
