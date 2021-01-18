@@ -22,6 +22,7 @@ transforms = transforms.Compose([
     transforms.Resize(), transforms.Normalize()
 ])
 
+# TODO: 结果保存VOC格式
 def predict(img_data, names, folder):
     results = model.batch_predict(img_data, transforms=transforms)
     for idx in range(len(results)):
@@ -33,7 +34,6 @@ def predict(img_data, names, folder):
     print(folder)
     for res in results:
         print(res)
-    # input("here")
 
 for vid_name in tqdm(os.listdir(args.input)):
     print("processing {}".format(vid_name))
