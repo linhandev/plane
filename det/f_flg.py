@@ -1,7 +1,11 @@
 import os
+import os.path as osp
 import argparse
 
+import cv2
 import paddlex as pdx
+from paddlex.det import transforms
+
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, help="图片路径")
