@@ -44,7 +44,7 @@ transforms = transforms.Compose([
 
 def predict(img_data, names):
     results = model.batch_predict(img_data, transforms=transforms)
-    for idx in range(len(results)):
+    for idx in range(len(results))
         results[idx]=r
         print(r)
         with open(osp.join(args.output, names[idx]+".xml")) as f:
@@ -57,3 +57,7 @@ names = []
 for f in os.listdir(args.input):
     img_data.append(cv2.imread(osp.join(args.input, f)))
     names.append(f.split(".")[0])
+    if len(names) == args.bs:
+        predict(img_data, names)
+    img_data=[]
+    names=[]
