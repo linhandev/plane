@@ -25,7 +25,15 @@ transforms = transforms.Compose([
 def predict(img_data, names, folder):
     results = model.batch_predict(img_data, transforms=transforms)
     for idx in range(len(results)):
-        pdx.det.visualize(img_data[idx], results[idx], threshold=0.8, save_dir=folder)
+        vis = pdx.det.visualize(img_data[idx], results[idx], threshold=0.8, save_dir=None)
+        cv2.imwrite(osp.join(folder, names[idx]), vis)
+        print(idx)
+
+    print("--------------------------")
+    print(folder)
+    for res in results:
+        print(res)
+    # input("here")
 
 for vid_name in tqdm(os.listdir(args.input)):
     print("processing {}".format(vid_name))
@@ -33,7 +41,7 @@ for vid_name in tqdm(os.listdir(args.input)):
     vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
 
     vid_name = vid_name.split(".")[0]
-    folder = osp.join(args.output, vid_name) 
+    folder = osp.join(args.output, vid_name)
     if not osp.exists(folder):
         os.makedirs(folder)
 
@@ -44,7 +52,7 @@ for vid_name in tqdm(os.listdir(args.input)):
     while success:
         if count % args.interval == 0:
             img_data.append(image)
-            names.append(str(count).zfill(6) + ".png")
+            names.append(str(count).zfill(6) + ".jpg")
             if len(img_data) == args.bs:
                 predict(img_data, names, folder)
                 img_data = []
@@ -53,8 +61,8 @@ for vid_name in tqdm(os.listdir(args.input)):
 
         success, image = vidcap.read()
         count += 1
-        print(count)
-    
+        # print(count)
+
     # 如果有剩的
     predict(img_data, names, folder)
     # input("here")
