@@ -33,7 +33,7 @@ def to_voc(name, xmin,ymin,xmax,ymax):
           <ymax>{}</ymax>
         </bndbox>
       </object>
-    </annotation>""".format("1.png", 1,2,3,4)
+    </annotation>""".format("1.png", xmin, ymin, xmax, ymax)
     return res
 
 
@@ -44,20 +44,21 @@ transforms = transforms.Compose([
 
 def predict(img_data, names):
     results = model.batch_predict(img_data, transforms=transforms)
-    for idx in range(len(results))
-        results[idx]=r
+    for idx in range(len(results)):
+        r=results[idx][0]['bbox']
+        print(names[idx])
         print(r)
-        with open(osp.join(args.output, names[idx]+".xml")) as f:
-            print(to_voc(names[i], ))
-        input("here")
+        with open(osp.join(args.output, names[idx]+".xml"), "w") as f:
+            print(to_voc(names[idx], r[0], r[1], r[0]+r[2], r[1]+r[3]), file=f)
 
 
 img_data = []
 names = []
 for f in os.listdir(args.input):
-    img_data.append(cv2.imread(osp.join(args.input, f)))
-    names.append(f.split(".")[0])
-    if len(names) == args.bs:
-        predict(img_data, names)
+  print(f)
+  img_data.append(cv2.imread(osp.join(args.input, f)))
+  names.append(f.split(".")[0])
+  if len(names) == args.bs:
+    predict(img_data, names)
     img_data=[]
     names=[]
