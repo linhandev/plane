@@ -2,6 +2,7 @@ import os
 import os.path as osp
 import argparse
 
+from tqdm import tqdm
 import cv2
 import paddlex as pdx
 from paddlex.det import transforms
@@ -16,6 +17,19 @@ args = parser.parse_args()
 
 
 def to_voc(name, xmin,ymin,xmax,ymax):
+    if xmin == -1:
+        res = """<?xml version='1.0' encoding='UTF-8'?>
+        <annotation>
+          <filename>{}</filename>
+          <object_num>0</object_num>
+          <size>
+            <width>1920</width>
+            <height>1080</height>
+          </size>
+          <object>
+          </object>
+        </annotation>""".format("1.png")
+
     res = """<?xml version='1.0' encoding='UTF-8'?>
     <annotation>
       <filename>{}</filename>
@@ -45,16 +59,20 @@ transforms = transforms.Compose([
 def predict(img_data, names):
     results = model.batch_predict(img_data, transforms=transforms)
     for idx in range(len(results)):
-        r=results[idx][0]['bbox']
-        print(names[idx])
-        print(r)
-        with open(osp.join(args.output, names[idx]+".xml"), "w") as f:
-            print(to_voc(names[idx], r[0], r[1], r[0]+r[2], r[1]+r[3]), file=f)
+        print(results[idx])
+        try:
+            r=results[idx][0]['bbox']
+            with open(osp.join(args.output, names[idx]+".xml"), "w") as f:
+                print(to_voc(names[idx], r[0], r[1], r[0]+r[2], r[1]+r[3]), file=f)
+        except IndexError:
+            with open(osp.join(args.output, names[idx]+".xml"), "w") as f:
+                print(to_voc(names[idx], -1, 0, 0, 0), file=f)
+
 
 
 img_data = []
 names = []
-for f in os.listdir(args.input):
+for f in tqdm(os.listdir(args.input)):
   print(f)
   img_data.append(cv2.imread(osp.join(args.input, f)))
   names.append(f.split(".")[0])
