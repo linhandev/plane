@@ -41,6 +41,11 @@ def dist(a, b):
     return ((a[0]-b[0])**2 + (a[1]-b[1])**2)**0.5
 
 
+def pinbb(p, bb):
+    if bb[0] <= p[0] <= bb[3] and bb[1] <= p[1] <= bb[3]:
+        return True
+    return False
+
 def dpoint(img, p, color="R"):
     if color == "R":
         color = (0, 0, 255)
@@ -51,6 +56,7 @@ def dpoint(img, p, color="R"):
     cv2.circle(img, (p[1],p[0]), 1, color, 4)
 
 
+
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
@@ -58,6 +64,7 @@ def main():
         idx = 0
         while True:
             vidcap.set(1, idx)
+            print("----")
             print(idx)
             success, image = vidcap.read()
             if not success:
