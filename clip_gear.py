@@ -85,6 +85,7 @@ def main():
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
         count = 0
+        vid_name = vid_name.split(".")[0]
         while True:
             vidcap.set(1, idx)
             print("----")
@@ -107,7 +108,11 @@ def main():
             gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
-            cv2.imwrite("/home/aistudio/test/frame/{}.png".format(str(idx).zfill(6)), image)
+            cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(str(idx).zfill(6)), crop(image, gr))
+            cv2.imwrite("/home/aistudio/test/frame/{}-gs.png".format(str(idx).zfill(6)), crop(image, gs))
+            if count != 0:
+                cv2.imwrite(osp.join(args.output, gs, "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
+                cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
 
 
 
