@@ -90,9 +90,10 @@ def main():
         idx = 0
         count = 0
         vid_name = vid_name.split(".")[0]
-        os.makedir(osp.join(args.output, vid_name))
+        os.mkdir(osp.join(args.output, "frame", vid_name))
         while True:
             vidcap.set(1, idx)
+            print(idx)
             success, image = vidcap.read()
             if not success: # 视频到头
                 break
@@ -138,7 +139,7 @@ def main():
                     save_patch(vid_name, idx, image, gs, gr)
                     continue
                 
-            cv2.imwrite(osp.join(args.output, "frame",vid_name, "{}-{}.png".format(vid_name, idx)), image)
+            cv2.imwrite(osp.join(args.output, "frame", vid_name, "{}-{}.png".format(vid_name, str(idx).zfill(6))), image)
             idx += 25
     input('here')
 
