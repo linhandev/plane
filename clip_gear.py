@@ -58,11 +58,12 @@ def dpoint(img, p, color="R"):
 
 
 def dbb(img, b, color="R"):
+    xmin, ymin, xmax, ymax = b
     lines = [
-        (b[0], b[1]), (b[0], b[3]),
-        (b[2], b[1]), (b[2], b[3]),
-        (b[1], b[0]), (b[1], b[3]),
-        (b[3], b[0]), (b[3], b[2])
+        [(xmin, ymin), (xmin, ymax)],
+        [(xmax, ymin), (xmax, ymax)],
+        [(xmin, ymin), (xmax, ymin)],
+        [(xmin, ymax), (xmax, ymax)]
     ]
     if color == "R":
         color = (0, 0, 255)
@@ -72,6 +73,8 @@ def dbb(img, b, color="R"):
         color = (255, 0, 0)
     
     for l in lines:
+        print(l[0])
+        print(l)
         cv2.line(img, l[0], l[1], color, 2)
 
 
