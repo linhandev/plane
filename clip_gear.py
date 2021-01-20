@@ -26,7 +26,6 @@ transforms = transforms.Compose([
 ])
 
 # 坐标的顺序是按照crop时下标的顺序，坐标第一个就是下标第一维，cv2里面的应该和这个是反的
-# 
 
 def toint(l):
     return [int(x) for x in l]
@@ -77,18 +76,14 @@ def dbb(img, b, color="R"):
     for l in lines:
         cv2.line(img, l[0], l[1], color, 2)
 
-def save_patch(vid_name, idx, image, gs, gr):
-    print("Save ", idx)
-    cv2.imwrite(osp.join(args.output, "gs", "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
-    cv2.imwrite(osp.join(args.output, "gr", "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
-
-
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
         count = 0
+        savegs = False
+        savegr = False
         vid_name = vid_name.split(".")[0]
         os.mkdir(osp.join(args.output, "frame", vid_name))
         while True:
@@ -115,12 +110,20 @@ def main():
 
            
             if count != 0: # 前面的帧看到人在起落架周围了，直接保存
-                save_patch(vid_name, idx, image, gs, gr)
+                if savegs:
+                    cv2.imwrite(osp.join(args.output, "gs", "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
+                if savegr:
+                    cv2.imwrite(osp.join(args.output, "gr", "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
                 count -= 1
                 idx += args.itv
                 continue
-
+            savegs = savegr = False
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data'] # 检测完人再乱涂乱画
+
+            dpoint(image, gc, "R")
+            dbb(image, g)
+            dbb(image, gr, "B")
+            dbb(image, gs,"G")
 
             for pidx, p in enumerate(people):
                 if p['label'] != "person":
@@ -129,18 +132,12 @@ def main():
                 pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
                 dpoint(image, pc, "G")
                 dbb(image, p, "G")
-                
-                if pinbb(pc, gr):
+                if pinbb(pc, gr) :
                     count = math.floor(25/args.itv)
-                    idx += args.itv
-                    save_patch(vid_name, idx, image, gs, gr)
-                    continue
-            dpoint(image, gc, "R")
-            dbb(image, g)
-            dbb(image, gr, "B")
-            dbb(image, gs,"G")
+
             cv2.imwrite(osp.join(args.output, "frame", vid_name, "{}-{}.png".format(vid_name, str(idx).zfill(6))), image)
-            idx += 25
+            if count == 0:
+                idx += 25
     input('here')
 
 if __name__ == "__main__":
