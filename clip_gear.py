@@ -82,19 +82,25 @@ def main():
             r = [2, 3] # HWC,纵横放大几倍
             gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ])
             cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
-
             patch = crop(image, g, "length")
             cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
 
+            g[2] = g[0] + g[2]
+            g[3] = g[1] + g[3]
+
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
             for pidx, p in enumerate(people):
-                print(p)
                 if p['label'] != "person":
                     continue
                 p = toint([p['top'], p['left'], p['bottom'], p['right']])
                 pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
-                print(dist(pc, gc))
                 dpoint(image, pc, "G")
+
+                print("++")
+                print(pidx)
+                print(dist(pc, gc))
+                print(pinbb(pc, g))
+
                 cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
 
             cv2.imwrite("/home/aistudio/test/frame/{}.png".format(idx), image)
