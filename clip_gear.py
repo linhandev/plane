@@ -23,6 +23,9 @@ transforms = transforms.Compose([
     transforms.Resize(), transforms.Normalize()
 ])
 
+# 坐标的顺序是按照crop时下标的顺序，坐标第一个就是下标第一维，cv2里面的应该和这个是反的
+# 
+
 def toint(l):
     return [int(x) for x in l]
 
@@ -55,11 +58,13 @@ def main():
                 idx += 25
                 continue
             
-            g = flg[0]["bbox"]
-            g = toint([g[1], g[0], g[3], g[2]])
-            gc = toint([g[0]+g[2]/2, g[1]+g[3]/2])
+            g = flg[0]["bbox"] # 起落架位置
+            g = toint([g[1], g[0], g[3], g[2]]) 
+            gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
             dpoint(image, gc)
-
+            r = [3, 2] # WHC,横纵放大几倍
+            gr = toint([gc[0]-g[0]*r[0]/2, gc[1]-g[1]*r[1]/2, gc[0]+g[0]*r[0]/2, gc[1]+g[1]*r[1]/2, ])
+            cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
 
             patch = crop(image, g, "length")
             cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
