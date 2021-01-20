@@ -122,7 +122,10 @@ def main():
                 print("++")
                 print(pidx)
                 print(dist(pc, gc))
-                print(pinbb(pc, g))
+                print(pinbb(pc, gr))
+                if pinbb(pc, gr):
+                    input("here")
+                
 
                 # cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
 
