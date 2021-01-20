@@ -42,7 +42,7 @@ def dist(a, b):
 
 
 def pinbb(p, bb):
-    if bb[0] <= p[0] <= bb[3] and bb[1] <= p[1] <= bb[3]:
+    if bb[0] <= p[0] <= bb[2] and bb[1] <= p[1] <= bb[3]:
         return True
     return False
 
