@@ -35,17 +35,16 @@ def crop(img, p, mode="max"):
 
 for vid_name in tqdm(os.listdir(args.input)):
     print("processing {}".format(vid_name))
-
     vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
     idx = 0
     while True:
         vidcap.set(1, idx)
+        print(idx)
         success, image = vidcap.read()
         if not success:
             break
         
         flg = flg_det.predict(image, transforms=transforms)
-        print(flg)
         if len(flg) == 0:
             idx += 25
             continue
@@ -54,9 +53,12 @@ for vid_name in tqdm(os.listdir(args.input)):
         g = toint([g[1], g[0], g[3], g[2]])
         print(flg)
         print(g)
-        patch = crop(image, g)
+        patch = crop(image, g, "length")
         cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
-        input("here")
+        
+        people = people_det.object_detection(
+                    images=img_data,
+                    use_gpu=True,
         idx += 25
 
 
