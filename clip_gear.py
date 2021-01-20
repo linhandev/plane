@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/test/video", help="视频存放路径")
 parser.add_argument("-o", "--output", type=str, default="/home/aistudio/test/frame", help="结果帧存放路径")
 parser.add_argument("-m", "--model", type=str, default="/home/aistudio/pdx/output/yolov3/best_model", help="起落架检测模型路径")
+parser.add_argument("--itv", type=int, default=5, help="人进入起落架区域，抽帧间隔")
 args = parser.parse_args()
 
 
@@ -77,21 +78,12 @@ def dbb(img, b, color="R"):
         print(l)
         cv2.line(img, l[0], l[1], color, 2)
 
-
-def save_patches(vidcap, idx, intv=5):
-    for i in range(0,26,intv):
-        vidcap.set(1, idx+i)
-        success, image = vidcap.read()
-
-
-
-
-
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
+        save = 0
         while True:
             vidcap.set(1, idx)
             print("----")
@@ -105,10 +97,9 @@ def main():
                 idx += 25
                 continue
             
-            g = flg[0]["bbox"] # 起落架位置
-            g = toint([g[1], g[0], g[3], g[2]]) 
+            g = flg[0]["bbox"] 
+            g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
             gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
-            dpoint(image, gc, "R")
             r = [2, 3] # HWC,纵横放大几倍
             gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ])
             # cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
@@ -117,6 +108,7 @@ def main():
 
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
+            dpoint(image, gc, "R")
             dbb(image, g)
             print("gr", gr)
             dbb(image, gr, "B")
