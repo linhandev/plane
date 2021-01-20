@@ -26,6 +26,7 @@ transforms = transforms.Compose([
 def toint(l):
     return [int(x) for x in l]
 
+
 def crop(img, p, mode="max"):
     if mode == "max":
         return img[p[0]:p[2], p[1]:p[3], :]
@@ -33,38 +34,47 @@ def crop(img, p, mode="max"):
         p = toint([p[0], p[1], p[0]+p[2], p[1]+p[3]])
         return crop(img, p)
 
-for vid_name in tqdm(os.listdir(args.input)):
-    print("processing {}".format(vid_name))
-    vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
-    idx = 0
-    while True:
-        vidcap.set(1, idx)
-        print(idx)
-        success, image = vidcap.read()
-        if not success:
-            break
-        
-        flg = flg_det.predict(image, transforms=transforms)
-        if len(flg) == 0:
-            idx += 25
-            continue
-        
-        g = flg[0]["bbox"]
-        g = toint([g[1], g[0], g[3], g[2]])
-        gc = toint([g[0]+g[2]/2, g[1]+g[3]/2])
-        patch = crop(image, g, "length")
-        cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
 
-        people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
-        for pidx, p in enumerate(people):
-            print(p)
-            if p['label'] != "person":
+def dpoint(img, p):
+    cv2.circle(img, (p[1],p[0]), 1, (0,0,255), 4)
+
+def main():
+    for vid_name in tqdm(os.listdir(args.input)):
+        print("processing {}".format(vid_name))
+        vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
+        idx = 0
+        while True:
+            vidcap.set(1, idx)
+            print(idx)
+            success, image = vidcap.read()
+            if not success:
+                break
+            
+            flg = flg_det.predict(image, transforms=transforms)
+            if len(flg) == 0:
+                idx += 25
                 continue
-            p = toint([p['top'], p['left'], p['bottom'], p['right']])
-            cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
-        # input("here")
-        idx += 25
+            
+            g = flg[0]["bbox"]
+            g = toint([g[1], g[0], g[3], g[2]])
+            gc = toint([g[0]+g[2]/2, g[1]+g[3]/2])
+            dpoint(image, gc)
 
 
+            patch = crop(image, g, "length")
+            cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
+
+            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
+            for pidx, p in enumerate(people):
+                print(p)
+                if p['label'] != "person":
+                    continue
+                p = toint([p['top'], p['left'], p['bottom'], p['right']])
+                cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
+            # input("here")
+            idx += 25
+
+if __name__ == "__main__":
+    main()
 
 
