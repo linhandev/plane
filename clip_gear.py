@@ -102,9 +102,9 @@ def main():
             dpoint(image, gc, "R")
             r = [2, 3] # HWC,纵横放大几倍
             gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ])
-            cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
-            patch = crop(image, g, "length")
-            cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
+            # cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
+            # patch = crop(image, g, "length")
+            # cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
 
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
@@ -124,9 +124,9 @@ def main():
                 print(dist(pc, gc))
                 print(pinbb(pc, g))
 
-                cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
+                # cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
 
-            cv2.imwrite("/home/aistudio/test/frame/{}.png".format(idx), image)
+            cv2.imwrite("/home/aistudio/test/frame/{}.png".format(str(idx).zfill(6)), image)
             idx += 25
 
 if __name__ == "__main__":
