@@ -79,8 +79,8 @@ def dbb(img, b, color="R"):
 
 def save_patch(vid_name, idx, image, gs, gr):
     print("Save ", idx)
-    cv2.imwrite(osp.join(args.output, gs, "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
-    cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
+    cv2.imwrite(osp.join(args.output, "gs", "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
+    cv2.imwrite(osp.join(args.output, "gr", "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
 
 
 def main():
@@ -113,18 +113,20 @@ def main():
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
 
-            dpoint(image, gc, "R")
-            dbb(image, g)
-            dbb(image, gr, "B")
-            dbb(image, gs,"G")
-
+           
             if count != 0: # 前面的帧看到人在起落架周围了，直接保存
                 save_patch(vid_name, idx, image, gs, gr)
                 count -= 1
                 idx += args.itv
                 continue
 
-            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
+            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data'] # 检测完人再乱涂乱画
+            
+            dpoint(image, gc, "R")
+            dbb(image, g)
+            dbb(image, gr, "B")
+            dbb(image, gs,"G")
+
             for pidx, p in enumerate(people):
                 if p['label'] != "person":
                     continue
