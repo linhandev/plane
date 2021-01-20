@@ -2,6 +2,7 @@ import os.path as osp
 import os
 import argparse
 import math
+import shutil
 
 from tqdm import tqdm
 import cv2
@@ -147,6 +148,7 @@ def main():
 
             if count == 0:
                 idx += 25
+        shutil.move(osp.join(args.output, "frame", vid_name), osp.join(args.output, "fin"))
 
 if __name__ == "__main__":
     main()
