@@ -1,6 +1,7 @@
 import os.path as osp
 import os
 import argparse
+import math
 
 from tqdm import tqdm
 import cv2
@@ -83,7 +84,7 @@ def main():
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
-        save = 0
+        count = 0
         while True:
             vidcap.set(1, idx)
             print("----")
@@ -101,18 +102,19 @@ def main():
             g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
             gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
             r = [2, 3] # HWC,纵横放大几倍
-            gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ])
-            # cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
-            # patch = crop(image, g, "length")
-            # cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
-
+            gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ]) # 一定倍数区域
+            l = 128 # 以gc为中心，围一个2l边长的正方形
+            gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
+            cv2.imwrite("/home/aistudio/test/frame/{}.png".format(str(idx).zfill(6)), image)
+
+
+
             dpoint(image, gc, "R")
             dbb(image, g)
-            print("gr", gr)
             dbb(image, gr, "B")
-            dbb(image, [gc[0]-128, gc[1]-128, gc[0]+128, gc[1]+128],"G")
+            dbb(image, gs,"G")
 
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
             for pidx, p in enumerate(people):
@@ -124,7 +126,7 @@ def main():
                 dbb(image, p, "G")
                 
                 if pinbb(pc, gr):
-                    save_patches(vidcap, idx)
+                    count = math.floor(25/args.itv)
                 
 
                 # cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
