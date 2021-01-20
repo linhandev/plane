@@ -37,9 +37,19 @@ def crop(img, p, mode="max"):
         p = toint([p[0], p[1], p[0]+p[2], p[1]+p[3]])
         return crop(img, p)
 
+def dist(a, b):
+    return ((a[0]-b[0])**2 + (a[1]-b[1])**2)**0.5
 
-def dpoint(img, p):
-    cv2.circle(img, (p[1],p[0]), 1, (0,0,255), 4)
+
+def dpoint(img, p, color="R"):
+    if color == "R":
+        color = (0, 0, 255)
+    elif color == "G":
+        color = (0, 255, 0)
+    elif color == "B":
+        color = (255, 0, 0)
+    cv2.circle(img, (p[1],p[0]), 1, color, 4)
+
 
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
@@ -61,7 +71,7 @@ def main():
             g = flg[0]["bbox"] # 起落架位置
             g = toint([g[1], g[0], g[3], g[2]]) 
             gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
-            dpoint(image, gc)
+            dpoint(image, gc, "R")
             r = [2, 3] # HWC,纵横放大几倍
             gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ])
             cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
@@ -75,11 +85,14 @@ def main():
                 if p['label'] != "person":
                     continue
                 p = toint([p['top'], p['left'], p['bottom'], p['right']])
-                                dpoint(image, pc)
-
-                cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
                 pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
-            # input("here")
+                print(dist(pc, gc))
+                dpoint(image, pc, "G")
+                cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
+
+            cv2.imwrite("/home/aistudio/test/frame/{}.png".format(idx), image)
+
+            input("here")
             idx += 25
 
 if __name__ == "__main__":
