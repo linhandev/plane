@@ -111,6 +111,7 @@ def main():
             dbb(image, g)
             print("gr", gr)
             dbb(image, gr, "B")
+            dbb(image, [gc[0]-128, gc[1]-128, gc[0]+128, gc[1]+128],"G")
 
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
             for pidx, p in enumerate(people):
