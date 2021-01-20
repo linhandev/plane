@@ -7,59 +7,39 @@ import cv2
 import paddlex as pdx
 from paddlex.det import transforms
 
+
 parser = argparse.ArgumentParser(description="")
-parser.add_argument("-m","--model",type=str, help="模型路径")
-parser.add_argument("-i", "--input", type=str, help="视频存放路径")
-parser.add_argument("-o", "--output", type=str, help="结果帧存放路径")
+parser.add_argument("-m","--model", default="/home/aistudio/pdx/output/yolov3/best_model", type=str, help="模型路径")
+parser.add_argument("-i", "--input", default="/home/aistudio/data/flg/video", type=str, help="视频存放路径")
+parser.add_argument("-o", "--output", default="/home/aistudio/data/flg/clip", type=str, help="结果帧存放路径")
 parser.add_argument("--bs", type=int, default=10, help="推理batchsize")
 args = parser.parse_args()
 
 
 model = pdx.load_model(args.model)
-
 transforms = transforms.Compose([
     transforms.Resize(), transforms.Normalize()
 ])
-
-def predict(img_data, names, folder):
-    results = model.batch_predict(img_data, transforms=transforms)
-    for idx in range(len(results)):
-        vis = pdx.det.visualize(img_data[idx], results[idx], threshold=0.8, save_dir=None)
-        cv2.imwrite(osp.join(folder, names[idx]), vis)
-        print(idx)
-
-    print("--------------------------")
-    print(folder)
-    for res in results:
-        print(res)
 
 for vid_name in tqdm(os.listdir(args.input)):
     print("processing {}".format(vid_name))
 
     vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
-
     vid_name = vid_name.split(".")[0]
-
-    success, image = vidcap.read()
-    count = 0
+    idx = 0
+    success = True
     while success:
+        success, image = vidcap.read()
+
+        print(idx)
         flg = model.predict(image, transforms=transforms)
         print(flg)
+        if len(flg) == 0:
+            idx += 25
+            continue
 
 
-        if count % args.interval == 0:
-            img_data.append(image)
-            names.append(str(count).zfill(6) + ".jpg")
-            if len(img_data) == args.bs:
-                predict(img_data, names, folder)
-                img_data = []
-                names = []
 
 
-        success, image = vidcap.read()
-        count += 1
-        # print(count)
 
-    # 如果有剩的
-    predict(img_data, names, folder)
-    # input("here")
+        input("here")
