@@ -78,6 +78,15 @@ def dbb(img, b, color="R"):
         cv2.line(img, l[0], l[1], color, 2)
 
 
+def save_patches(vidcap, idx, intv=5):
+    for i in range(0,26,intv):
+        vidcap.set(1, idx+i)
+        success, image = vidcap.read()
+
+
+
+
+
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
@@ -121,13 +130,9 @@ def main():
                 pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
                 dpoint(image, pc, "G")
                 dbb(image, p, "G")
-
-                print("+++++++++++++++")
-                print(pidx)
-                print(dist(pc, gc))
-                print(pinbb(pc, gr))
+                
                 if pinbb(pc, gr):
-                    input("here")
+                    save_patches(vidcap, idx)
                 
 
                 # cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
