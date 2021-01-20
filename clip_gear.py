@@ -75,10 +75,11 @@ def dbb(img, b, color="R"):
         color = (255, 0, 0)
     
     for l in lines:
-        print(l[0])
-        print(l)
         cv2.line(img, l[0], l[1], color, 2)
 
+def save_patch(vid_name, idx, image, gs, gr):
+    cv2.imwrite(osp.join(args.output, gs, "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
+    cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
@@ -110,11 +111,10 @@ def main():
             g[3] = g[1] + g[3]
             cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(str(idx).zfill(6)), crop(image, gr))
             cv2.imwrite("/home/aistudio/test/frame/{}-gs.png".format(str(idx).zfill(6)), crop(image, gs))
+            
             if count != 0:
                 cv2.imwrite(osp.join(args.output, gs, "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
-                cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
-
-
+                cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
 
             dpoint(image, gc, "R")
             dbb(image, g)
@@ -132,10 +132,10 @@ def main():
                 
                 if pinbb(pc, gr):
                     count = math.floor(25/args.itv)
+                    idx += args.itv
+                    save_patch(vid_name, idx, image, gs, gr)
+                    continue
                 
-
-                # cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
-
             cv2.imwrite("/home/aistudio/test/frame/{}.png".format(str(idx).zfill(6)), image)
             idx += 25
 
