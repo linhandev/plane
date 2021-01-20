@@ -121,11 +121,6 @@ def main():
                 continue
 
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data'] # 检测完人再乱涂乱画
-            
-            dpoint(image, gc, "R")
-            dbb(image, g)
-            dbb(image, gr, "B")
-            dbb(image, gs,"G")
 
             for pidx, p in enumerate(people):
                 if p['label'] != "person":
@@ -140,7 +135,10 @@ def main():
                     idx += args.itv
                     save_patch(vid_name, idx, image, gs, gr)
                     continue
-                
+            dpoint(image, gc, "R")
+            dbb(image, g)
+            dbb(image, gr, "B")
+            dbb(image, gs,"G")
             cv2.imwrite(osp.join(args.output, "frame", vid_name, "{}-{}.png".format(vid_name, str(idx).zfill(6))), image)
             idx += 25
     input('here')
