@@ -46,6 +46,7 @@ def pinbb(p, bb):
         return True
     return False
 
+
 def dpoint(img, p, color="R"):
     if color == "R":
         color = (0, 0, 255)
@@ -55,6 +56,23 @@ def dpoint(img, p, color="R"):
         color = (255, 0, 0)
     cv2.circle(img, (p[1],p[0]), 1, color, 4)
 
+
+def dbb(img, b, color="R"):
+    lines = [
+        (b[0], b[1]), (b[0], b[3]),
+        (b[2], b[1]), (b[2], b[3]),
+        (b[1], b[0]), (b[1], b[3]),
+        (b[3], b[0]), (b[3], b[2])
+    ]
+    if color == "R":
+        color = (0, 0, 255)
+    elif color == "G":
+        color = (0, 255, 0)
+    elif color == "B":
+        color = (255, 0, 0)
+    
+    for l in lines:
+        cv2.line(img, l[0], l[1], color, 2)
 
 
 def main():
@@ -87,6 +105,7 @@ def main():
 
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
+            dbb(image, g)
 
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
             for pidx, p in enumerate(people):
