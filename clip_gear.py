@@ -23,6 +23,16 @@ transforms = transforms.Compose([
     transforms.Resize(), transforms.Normalize()
 ])
 
+def toint(l):
+    return [int(x) for x in l]
+
+def crop(img, p, mode="max"):
+    if mode == "max":
+        return img[p[0]:p[2], p[1]:p[3], :]
+    elif mode == "length":
+        p = toint([p[0], p[1], p[0]+p[2], p[1]+p[3]])
+        return crop(img, p)
+
 for vid_name in tqdm(os.listdir(args.input)):
     print("processing {}".format(vid_name))
 
@@ -42,9 +52,10 @@ for vid_name in tqdm(os.listdir(args.input)):
         
         print(flg[0])
         g = flg[0]["bbox"]
-        g = [g[1], g[0], g[3], g[2]]
+        g = toint([g[1], g[0], g[3], g[2]])
         print(g)
-        cv2.imwrite("/home/aistudio/{}-ldg.png".format(idx), patch)
+        patch = crop(image, g)
+        cv2.imwrite("/home/aistudio/temp/frame/{}-ldg.png".format(idx), patch)
 
 
 
