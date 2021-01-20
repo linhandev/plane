@@ -109,6 +109,8 @@ def main():
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
             dbb(image, g)
+            print("gr", gr)
+            dbb(image, gr, "B")
 
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
             for pidx, p in enumerate(people):
@@ -119,7 +121,7 @@ def main():
                 dpoint(image, pc, "G")
                 dbb(image, p, "G")
 
-                print("++")
+                print("+++++++++++++++")
                 print(pidx)
                 print(dist(pc, gc))
                 print(pinbb(pc, gr))
