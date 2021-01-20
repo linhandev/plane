@@ -62,8 +62,8 @@ def main():
             g = toint([g[1], g[0], g[3], g[2]]) 
             gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
             dpoint(image, gc)
-            r = [3, 2] # WHC,横纵放大几倍
-            gr = toint([gc[0]-g[0]*r[0]/2, gc[1]-g[1]*r[1]/2, gc[0]+g[0]*r[0]/2, gc[1]+g[1]*r[1]/2, ])
+            r = [2, 3] # HWC,纵横放大几倍
+            gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ])
             cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(idx), crop(image, gr))
 
             patch = crop(image, g, "length")
@@ -75,7 +75,10 @@ def main():
                 if p['label'] != "person":
                     continue
                 p = toint([p['top'], p['left'], p['bottom'], p['right']])
+                                dpoint(image, pc)
+
                 cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
+                pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
             # input("here")
             idx += 25
 
