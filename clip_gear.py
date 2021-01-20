@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/test/video", help="视频存放路径")
 parser.add_argument("-o", "--output", type=str, default="/home/aistudio/test/frame", help="结果帧存放路径")
 parser.add_argument("-m", "--model", type=str, default="/home/aistudio/pdx/output/yolov3/best_model", help="起落架检测模型路径")
-parser.add_argument("--itv", type=int, default=5, help="人进入起落架区域，抽帧间隔")
+parser.add_argument("--itv", type=int, default=3, help="人进入起落架区域，抽帧间隔")
 args = parser.parse_args()
 
 
@@ -92,15 +92,15 @@ def main():
             print("----")
             print(idx)
             success, image = vidcap.read()
-            if not success:
+            if not success: # 视频到头
                 break
             
             flg = flg_det.predict(image, transforms=transforms)
-            if len(flg) == 0:
+            if len(flg) == 0: # 没有起落架，过
                 idx += 25
                 continue
             
-            g = flg[0]["bbox"] 
+            g = flg[0]["bbox"]
             g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
             gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
             r = [2, 3] # HWC,纵横放大几倍
@@ -109,17 +109,17 @@ def main():
             gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
-            cv2.imwrite("/home/aistudio/test/frame/{}-gr.png".format(str(idx).zfill(6)), crop(image, gr))
-            cv2.imwrite("/home/aistudio/test/frame/{}-gs.png".format(str(idx).zfill(6)), crop(image, gs))
-            
-            if count != 0:
-                cv2.imwrite(osp.join(args.output, gs, "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
-                cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
 
             dpoint(image, gc, "R")
             dbb(image, g)
             dbb(image, gr, "B")
             dbb(image, gs,"G")
+
+            if count != 0: # 前面的帧看到人在起落架周围了，直接保存
+                save_patch(vid_name, idx, image, gs, gr)
+                count -= 1
+                idx += args.itv
+                continue
 
             people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
             for pidx, p in enumerate(people):
@@ -136,7 +136,7 @@ def main():
                     save_patch(vid_name, idx, image, gs, gr)
                     continue
                 
-            cv2.imwrite("/home/aistudio/test/frame/{}.png".format(str(idx).zfill(6)), image)
+            cv2.imwrite(osp.join(args.output, "frame", "{}-{}.png".format(vid_name, idx)), image)
             idx += 25
 
 if __name__ == "__main__":
