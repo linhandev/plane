@@ -55,7 +55,9 @@ for vid_name in tqdm(os.listdir(args.input)):
         g = toint([g[1], g[0], g[3], g[2]])
         print(g)
         patch = crop(image, g)
-        cv2.imwrite("/home/aistudio/temp/frame/{}-ldg.png".format(idx), patch)
+        cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
+
+        idx += 25
 
 
 
