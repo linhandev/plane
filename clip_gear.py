@@ -117,14 +117,11 @@ def main():
                 count -= 1
                 idx += args.itv
                 continue
+
             savegs = savegr = False
-            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data'] # 检测完人再乱涂乱画
 
-            dpoint(image, gc, "R")
-            dbb(image, g)
-            dbb(image, gr, "B")
-            dbb(image, gs,"G")
-
+            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data'] 
+            
             for pidx, p in enumerate(people):
                 if p['label'] != "person":
                     continue
@@ -132,13 +129,24 @@ def main():
                 pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
                 dpoint(image, pc, "G")
                 dbb(image, p, "G")
-                if pinbb(pc, gr) :
+                if pinbb(pc, gr):
                     count = math.floor(25/args.itv)
-
+                    savegr = True
+                
+                if pinbb(pc, gs):
+                    count = math.floor(25/args.itv)
+                    savegs = True
+                
+            
+            # 检测完人再乱涂乱画
+            dpoint(image, gc, "R")
+            dbb(image, g)
+            dbb(image, gr, "B")
+            dbb(image, gs,"G")
             cv2.imwrite(osp.join(args.output, "frame", vid_name, "{}-{}.png".format(vid_name, str(idx).zfill(6))), image)
+
             if count == 0:
                 idx += 25
-    input('here')
 
 if __name__ == "__main__":
     main()
