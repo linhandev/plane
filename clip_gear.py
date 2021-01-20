@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/test/video", help="视频存放路径")
 parser.add_argument("-o", "--output", type=str, default="/home/aistudio/test/frame", help="结果帧存放路径")
 parser.add_argument("-m", "--model", type=str, default="/home/aistudio/pdx/output/yolov3/best_model", help="起落架检测模型路径")
-parser.add_argument("--itv", type=int, default=3, help="人进入起落架区域，抽帧间隔")
+parser.add_argument("--itv", type=int, default=8, help="人进入起落架区域，抽帧间隔")
 args = parser.parse_args()
 
 
@@ -78,8 +78,11 @@ def dbb(img, b, color="R"):
         cv2.line(img, l[0], l[1], color, 2)
 
 def save_patch(vid_name, idx, image, gs, gr):
+    print("Save ", idx)
     cv2.imwrite(osp.join(args.output, gs, "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
     cv2.imwrite(osp.join(args.output, gr, "{}-{}-gr.png".format(vid_name, str(idx).zfill(6))), crop(image, gr))
+
+
 def main():
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
@@ -87,10 +90,9 @@ def main():
         idx = 0
         count = 0
         vid_name = vid_name.split(".")[0]
+        os.makedir(osp.join(args.output, vid_name))
         while True:
             vidcap.set(1, idx)
-            print("----")
-            print(idx)
             success, image = vidcap.read()
             if not success: # 视频到头
                 break
@@ -136,8 +138,9 @@ def main():
                     save_patch(vid_name, idx, image, gs, gr)
                     continue
                 
-            cv2.imwrite(osp.join(args.output, "frame", "{}-{}.png".format(vid_name, idx)), image)
+            cv2.imwrite(osp.join(args.output, "frame",vid_name, "{}-{}.png".format(vid_name, idx)), image)
             idx += 25
+    input('here')
 
 if __name__ == "__main__":
     main()
