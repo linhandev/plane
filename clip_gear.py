@@ -56,9 +56,13 @@ for vid_name in tqdm(os.listdir(args.input)):
         patch = crop(image, g, "length")
         cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
         
-        people = people_det.object_detection(
-                    images=img_data,
-                    use_gpu=True,
+        people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
+        for pidx, p in enumerate(people):
+            if p['label'] != "person":
+                continue
+            p = toint([p['top'], p['left'], p['bottom'], p['right']])
+            cv2.imwrite("/home/aistudio/test/frames/{}-p-{}.png".format(idx, pidx), crop(image, p))
+        # input("here")
         idx += 25
 
 
