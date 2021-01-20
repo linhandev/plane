@@ -50,13 +50,13 @@ for vid_name in tqdm(os.listdir(args.input)):
             idx += 25
             continue
         
-        print(flg[0])
         g = flg[0]["bbox"]
         g = toint([g[1], g[0], g[3], g[2]])
+        print(flg)
         print(g)
         patch = crop(image, g)
         cv2.imwrite("/home/aistudio/test/frame/{}-ldg.png".format(idx), patch)
-
+        input("here")
         idx += 25
 
 
