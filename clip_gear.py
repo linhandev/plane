@@ -58,7 +58,7 @@ def dpoint(img, p, color="R"):
 
 
 def dbb(img, b, color="R"):
-    xmin, ymin, xmax, ymax = b
+    ymin, xmin, ymax, xmax = b
     lines = [
         [(xmin, ymin), (xmin, ymax)],
         [(xmax, ymin), (xmax, ymax)],
@@ -117,6 +117,7 @@ def main():
                 p = toint([p['top'], p['left'], p['bottom'], p['right']])
                 pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
                 dpoint(image, pc, "G")
+                dbb(image, p, "G")
 
                 print("++")
                 print(pidx)
@@ -126,8 +127,6 @@ def main():
                 cv2.imwrite("/home/aistudio/test/frame/{}-p-{}.png".format(idx, pidx), crop(image, p))
 
             cv2.imwrite("/home/aistudio/test/frame/{}.png".format(idx), image)
-
-            input("here")
             idx += 25
 
 if __name__ == "__main__":
