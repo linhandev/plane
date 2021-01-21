@@ -30,14 +30,14 @@ width = 480
 height = 270
 mean=[0.485, 0.456, 0.406]
 std=[0.229, 0.224, 0.225]
-epoch_num = 15
+epoch_num = 20
 
 train_transforms = t.Compose([
-        t.RandomHorizontalFlip(),
-        t.RandomExpand(),
-        t.RandomDistort(),
-        t.MixupImage(mixup_epoch=int(epoch_num * 0.5)),
-        t.Resize(target_size=width, interp='RANDOM'), 
+        # t.RandomHorizontalFlip(),
+        # t.RandomExpand(),
+        # t.RandomDistort(),
+        # t.MixupImage(mixup_epoch=int(epoch_num * 0.5)),
+        # t.Resize(target_size=width, interp='RANDOM'), 
         t.Normalize(mean=mean, std=std),
         ])
 # 定义训练和验证所用的数据集
@@ -46,8 +46,8 @@ train_dataset = pdx.datasets.CocoDetection(
     data_dir='/home/aistudio/data/data67498/DatasetId_153212_1611125306/Images',
     ann_file='/home/aistudio/data/data67498/DatasetId_153212_1611125306/Annotations/coco_info.json',
     transforms=train_transforms,
-    num_workers=4,
-    buffer_size=64,
+    num_workers=8,
+    buffer_size=256,
     parallel_method='process',
     shuffle=True)
 # eval_dataset = pdx.datasets.CocoDetection(

@@ -139,8 +139,8 @@ def reader_func(reader_q, vid_names):
 
             
             idx += args.itv
-
-            # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
+        
+        vidcap.release()
 
 people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
 flg_det = pdx.load_model(args.model)
