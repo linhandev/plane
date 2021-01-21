@@ -20,7 +20,11 @@ parser.add_argument("--itv", type=int, default=25, help="检测抽帧间隔")
 args = parser.parse_args()
 
 
-people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
+people_det = hub.Module(name="yoloparser.add_argument("--itv", type=int, default=25, help="检测抽帧间隔")
+args = parser.parse_args()
+
+
+people_det = hub.Module(name="yolov3_resnet50_vd_coco20v3_resnet50_vd_coco2017")
 
 flg_det = pdx.load_model(args.model)
 transforms = transforms.Compose([
@@ -108,7 +112,7 @@ def draw(image, name, flg, people):
         dpoint(image, pc, "G")
         dbb(image, p, "G")
 
-    cv2.imwrite(osp.join(args.output, "draw", name)), image)
+    cv2.imwrite(osp.join(args.output, "draw", name), image)
 
 
 def main():
