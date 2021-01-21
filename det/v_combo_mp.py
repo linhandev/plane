@@ -150,14 +150,14 @@ transforms = transforms.Compose([
 
 def main(args):
     # mp.set_start_method('spawn')
-    image_q = mp.Manager().Queue()
-    p_num = 4
+    image_q = mp.Manager().Queue(20)
+    reader_num = 4
     names = os.listdir(args.input)
-    names_chunk = [[] for _ in range(p_num)]
+    names_chunk = [[] for _ in range(reader_num)]
     for idx in range(len(names)):
-        names_chunk[idx%p_num].append(names[idx])
+        names_chunk[idx%reader_num].append(names[idx])
     
-    ps = [mp.Process(target=reader, args=(image_q, names_chunk[idx])) for idx in range(p_num)]
+    ps = [mp.Process(target=reader, args=(image_q, names_chunk[idx])) for idx in range(reader_num)]
     for p in ps:
         p.start()
     
