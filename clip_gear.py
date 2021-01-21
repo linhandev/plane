@@ -109,6 +109,7 @@ def main():
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
 
+            cv2.imwrite(osp.join(args.output, "ngs", "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
 
 
             if count != 0: # 前面的帧看到人在起落架周围了，直接保存
