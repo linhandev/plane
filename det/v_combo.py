@@ -2,13 +2,14 @@ import os.path as osp
 import os
 import argparse
 import shutil
+import multiprocessing as mp
+
 
 from tqdm import tqdm
 import cv2
 import paddlehub as hub
 import paddlex as pdx
 from paddlex.det import transforms
-import numpy as np 
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -80,11 +81,14 @@ def dbb(img, b, color="R"):
     for l in lines:
         cv2.line(img, l[0], l[1], color, 2)
 
-def det(images, names):
-    flgs = flg_det.batch_predict(images, transforms=transforms)
-    people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
-    for idx in range(len(names)):
-        draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
+def det(image_q):
+    while 1:
+        print(q.size())
+        images, names = q.get()
+        flgs = flg_det.batch_predict(images, transforms=transforms)
+        people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
+        for idx in range(len(names)):
+            draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
 
 
 def draw(image, name, flg, people):
@@ -119,6 +123,11 @@ def draw(image, name, flg, people):
 
 
 def main():
+    mp.set_start_method('spawn')
+    image_q = mp.Queue()
+    p = mp.Process(target=det, args=(image_q,))
+    p.start()
+
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
@@ -132,15 +141,19 @@ def main():
             print(idx)
             vidcap.set(1, idx)
             success, image = vidcap.read()
-            if len(names) == args.bs or not success: # 视频到头
+            if not success:
                 det(images, names)
+                break
+
+            if len(names) == args.bs: # 视频到头
+                det(images, names)
+
             if image is not None:
                 images.append(image)
                 names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
             else:
                 print("None image", idx)
             idx += args.itv
-        
 
         shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
