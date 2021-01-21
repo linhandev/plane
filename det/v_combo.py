@@ -90,6 +90,8 @@ def det(images, names):
 def draw(image, name, flg, people):
     # print(flg)
     # print(people)
+    if len(flg) == 0:
+        return
     g = flg[0]["bbox"]
     g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
     gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
