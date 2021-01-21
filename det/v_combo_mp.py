@@ -5,7 +5,6 @@ import shutil
 import multiprocessing as mp
 
 
-from tqdm import tqdm
 import cv2
 import paddlehub as hub
 import paddlex as pdx
@@ -111,7 +110,7 @@ def draw(image, name, flg, people):
 
     cv2.imwrite(osp.join(args.output, "draw", name), image)
 
-def reader(image_q):
+def reader(image_q, vid_name):
     #  for vid_name in tqdm():
     print("processing {}".format(vid_name))
     vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
@@ -149,10 +148,11 @@ def reader(image_q):
 
         # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
-def main():
+def main(args):
     # mp.set_start_method('spawn')
-    image_q = mp.Queue()
-    args = [(image_q, name) for name in os.listdir(args.input)]
+    image_q = mp.Manager().Queue()
+    names = os.listdir(args.input)
+    args = [(image_q, name) for name in names]
     with mp.Pool(processes=4) as pool:
         pool.starmap(reader, args)
         # mp.Process(target=reader, args=(image_q,))
@@ -169,6 +169,5 @@ def main():
             draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
         print("finish inference")
     
-    p.join()
 if __name__ == "__main__":
-    main()
+    main(args)
