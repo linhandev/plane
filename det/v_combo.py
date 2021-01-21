@@ -10,6 +10,9 @@ import paddlex as pdx
 from paddlex.det import transforms
 import numpy as np 
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
+
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/data/data67498/video/train", help="视频存放路径")
 parser.add_argument("-o", "--output", type=str, default="/home/aistudio/data/draw", help="结果帧存放路径")
@@ -79,14 +82,15 @@ def dbb(img, b, color="R"):
 
 def det(images, names):
     flgs = flg_det.batch_predict(images, transforms=transforms)
-    people = people_det.object_detection(images=images, use_gpu=True)[0]['data']
-    print(people)
+    people = people_det.object_detection(images=images, use_gpu=True)
     for idx in range(len(names)):
-        draw(images[idx], names[idx], flgs[idx], people[idx])
+        draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
 
 
 def draw(image, name, flg, people):
-    g = flg["bbox"]
+    print(flg)
+    print(people)
+    g = flg[0]["bbox"]
     g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
     gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
     r = [2, 3] # HWC,纵横放大几倍
@@ -117,6 +121,7 @@ def main():
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
+        print(idx)
 
         vid_name = vid_name.split(".")[0]
         os.mkdir(osp.join(args.output, "draw", vid_name))
