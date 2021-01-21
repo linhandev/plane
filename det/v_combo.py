@@ -12,10 +12,10 @@ from paddlex.det import transforms
 
 
 parser = argparse.ArgumentParser(description="")
-parser.add_argument("-i", "--input", type=str, default="/home/aistudio/test/video", help="视频存放路径")
-parser.add_argument("-o", "--output", type=str, default="/home/aistudio/test/frame", help="结果帧存放路径")
+parser.add_argument("-i", "--input", type=str, default="/home/aistudio/data/data67498/video/train", help="视频存放路径")
+parser.add_argument("-o", "--output", type=str, default="/home/aistudio/data/draw", help="结果帧存放路径")
 parser.add_argument("-m", "--model", type=str, default="/home/aistudio/pdx/output/yolov3/best_model", help="起落架检测模型路径")
-parser.add_argument("--bs", type=int, default=16)
+parser.add_argument("--bs", type=int, default=8)
 parser.add_argument("--itv", type=int, default=25, help="检测抽帧间隔")
 args = parser.parse_args()
 
