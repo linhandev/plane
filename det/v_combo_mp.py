@@ -142,6 +142,12 @@ def reader(image_q, vid_names):
 
             # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
+people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
+flg_det = pdx.load_model(args.model)
+transforms = transforms.Compose([
+    transforms.Resize(), transforms.Normalize()
+])
+
 def main(args):
     # mp.set_start_method('spawn')
     image_q = mp.Manager().Queue()
@@ -155,11 +161,8 @@ def main(args):
     for p in ps:
         p.start()
     
-    people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
-    flg_det = pdx.load_model(args.model)
-    transforms = transforms.Compose([
-        transforms.Resize(), transforms.Normalize()
-    ])
+
+    print("finish loading")
 
     while True:
         print("image queue qsize", image_q.qsize())
