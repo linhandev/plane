@@ -125,18 +125,26 @@ def reader(image_q):
             print(idx)
             vidcap.set(1, idx)
             success, image = vidcap.read()
+            
             if not success:
                 image_q.put([images, names])
+                print("put, image qsize", image_q.qsize())
                 break
-
-            if len(names) == args.bs: # 视频到头
-                image_q.put([images, names])
 
             if image is not None:
                 images.append(image)
                 names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
             else:
                 print("None image", idx)
+            
+
+            if len(names) == args.bs:
+                image_q.put([images, names])
+                print("put, image qsize", image_q.qsize())
+                names = []
+                images = []
+
+            
             idx += args.itv
 
         # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
@@ -148,7 +156,7 @@ def main():
     p.start()
 
     while True:
-        print(image_q.qsize())
+        print("image queue qsize", image_q.qsize())
         images, names = image_q.get()
         
         print("doing inference")
