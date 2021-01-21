@@ -74,35 +74,38 @@ def dbb(img, b, color="R"):
     for l in lines:
         cv2.line(img, l[0], l[1], color, 2)
 
-def writer(image, name, flg, people):
-    if len(flg) == 0:
-        return
-    g = flg[0]["bbox"]
-    g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
-    gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
-    r = [2, 3] # HWC,纵横放大几倍
-    gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ]) # 一定倍数区域
-    l = 128 # 以gc为中心，围一个2l边长的正方形
-    gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
-    g[2] = g[0] + g[2]
-    g[3] = g[1] + g[3]
-
-    dpoint(image, gc, "R")
-    dbb(image, g)
-    dbb(image, gr, "B")
-    dbb(image, gs,"G")
-
-    for p in people:
-        if p['label'] != "person":
+def writer_func(writer_q):
+    while True:
+        print("writer queuesize", writer_q.qsize())
+        image, name, flg, people = writer_q.get()
+        if len(flg) == 0:
             continue
-        p = toint([p['top'], p['left'], p['bottom'], p['right']])
-        pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
-        dpoint(image, pc, "G")
-        dbb(image, p, "G")
+        g = flg[0]["bbox"]
+        g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
+        gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
+        r = [2, 3] # HWC,纵横放大几倍
+        gr = toint([gc[0]-g[2]*r[0]/2, gc[1]-g[3]*r[1]/2, gc[0]+g[2]*r[0]/2, gc[1]+g[3]*r[1]/2, ]) # 一定倍数区域
+        l = 128 # 以gc为中心，围一个2l边长的正方形
+        gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
+        g[2] = g[0] + g[2]
+        g[3] = g[1] + g[3]
 
-    cv2.imwrite(osp.join(args.output, "draw", name), image)
+        dpoint(image, gc, "R")
+        dbb(image, g)
+        dbb(image, gr, "B")
+        dbb(image, gs,"G")
 
-def reader(image_q, vid_names):
+        for p in people:
+            if p['label'] != "person":
+                continue
+            p = toint([p['top'], p['left'], p['bottom'], p['right']])
+            pc = toint([(p[0]+p[2])/2, (p[1]+p[3])/2])
+            dpoint(image, pc, "G")
+            dbb(image, p, "G")
+
+        cv2.imwrite(osp.join(args.output, "draw", name), image)
+
+def reader_func(image_q, vid_names):
      for vid_name in vid_names:
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
@@ -113,7 +116,6 @@ def reader(image_q, vid_names):
         images = []
         names =  []
         while True:
-            print(idx)
             vidcap.set(1, idx)
             success, image = vidcap.read()
             
@@ -155,7 +157,7 @@ def main(args):
     for idx in range(len(names)):
         names_chunk[idx%reader_num].append(names[idx])
 
-    readers = [mp.Process(target=reader, args=(reader_q, names_chunk[idx])) for idx in range(reader_num)]
+    readers = [mp.Process(target=reader_func, args=(reader_q, names_chunk[idx])) for idx in range(reader_num)]
     for reader in readers:
         reader.start()
     
@@ -163,7 +165,7 @@ def main(args):
     writer_q= mp.Manager().Queue(10)
     writer_num = 4
     for idx in range(writer_num):
-        writers = [mp.Process(target=writer, args=(writer_q)) for idx in range(writer)]
+        writers = [mp.Process(target=writer_func, args=(writer_q, )) for idx in range(writer_num)]
     for writer in writers:
         writer.start()
 
@@ -176,7 +178,7 @@ def main(args):
         flgs = flg_det.batch_predict(images, transforms=transforms)
         people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
         for idx in range(len(names)):
-            draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
+            writer_q.append([images[idx], names[idx], flgs[idx], people[idx]['data']])
         print("finish inference")
     
     for reader in readers:
