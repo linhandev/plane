@@ -154,7 +154,7 @@ def main(args):
     names = os.listdir(args.input)
     args = [(image_q, name) for name in names]
     with mp.Pool(processes=4) as pool:
-        pool.apply_async(reader, args)
+        pool.starmap_async(reader, args)
         # mp.Process(target=reader, args=(image_q,))
     
 
