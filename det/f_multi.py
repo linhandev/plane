@@ -12,10 +12,7 @@ parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, help="图片路径")
 parser.add_argument("-o", "--output", type=str, help="结果xml路径")
 parser.add_argument("--bs", type=int, default=10, help="推理batchsize")
-parser.add_argument("--model", type=str,help="模型路径")
 args = parser.parse_args()
-
-
 
 
 object_detector = hub.Module(name="yolov3_resnet50_vd_coco2017")
@@ -23,9 +20,7 @@ object_detector = hub.Module(name="yolov3_resnet50_vd_coco2017")
 def predict(img_data, names):
     results = object_detector.object_detection(
         images=img_data,
-        use_gpu=True,
-        output_dir=osp.join(args.output),
-        visualization=True,
+        use_gpu=True
     )
     for idx, res in enumerate(results):
         print(res)
