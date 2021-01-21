@@ -2,20 +2,25 @@
 
 ```shell
 IFS=$'\n'
+
 for folder in `ls`
 do
-echo
-cd "$folder"
-
-var=$(pwd)
-basename $(pwd)
-currdir="$(basename $PWD)"
-echo "$currdir"
-ffmpeg -framerate 1 -pattern_type glob -i "*.png" ${currdir}.mkv
-mv ${currdir}.mkv ../../mkv
-
+echo $folder
+cd $folder
+ffmpeg -framerate 1 -pattern_type glob -i "*.png" ${folder}.mkv
+mv ${folder}.mkv ../../mkv
 cd ..
+rm $folder -rf
 done
+```
+
+```shell
+dir="Q23502-撤轮挡"
+cd $dir
+ffmpeg -framerate 2 -pattern_type glob -i "*.png" ${dir}.mkv
+mv $dir.mkv ../../mkv
+cd ..
+rm -rf $dir
 ```
 
 ```shell
