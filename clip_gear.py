@@ -108,7 +108,6 @@ def main():
             gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
-            cv2.imwrite(osp.join(args.output, "gear", "{}-{}-gear.png".format(vid_name, str(idx).zfill(6))), crop(image, g, "length"))
 
 
 
