@@ -74,9 +74,7 @@ def dbb(img, b, color="R"):
     for l in lines:
         cv2.line(img, l[0], l[1], color, 2)
 
-def draw(image, name, flg, people):
-    # print(flg)
-    # print(people)
+def writer(image, name, flg, people):
     if len(flg) == 0:
         return
     g = flg[0]["bbox"]
@@ -150,20 +148,26 @@ transforms = transforms.Compose([
 
 def main(args):
     # mp.set_start_method('spawn')
-    image_q = mp.Manager().Queue(20)
+    reader_q = mp.Manager().Queue(10)
     reader_num = 4
     names = os.listdir(args.input)
     names_chunk = [[] for _ in range(reader_num)]
     for idx in range(len(names)):
         names_chunk[idx%reader_num].append(names[idx])
+
+    readers = [mp.Process(target=reader, args=(reader_q, names_chunk[idx])) for idx in range(reader_num)]
+    for reader in readers:
+        reader.start()
     
-    ps = [mp.Process(target=reader, args=(image_q, names_chunk[idx])) for idx in range(reader_num)]
-    for p in ps:
-        p.start()
-    
+
+    writer_q= mp.Manager().Queue(10)
+    writer_num = 4
+    for idx in range(writer_num):
+        writers = [mp.Process(target=writer, args=(writer_q)) for idx in range(writer)]
+    for writer in writers:
+        writer.start()
 
     print("finish loading")
-
     while True:
         print("image queue qsize", image_q.qsize())
         images, names = image_q.get()
@@ -175,8 +179,10 @@ def main(args):
             draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
         print("finish inference")
     
-    for p in ps:
-        p.join()
+    for reader in readers:
+        reader.join()
+    for writer in writers:
+        writer.join()
 
 if __name__ == "__main__":
     main(args)
