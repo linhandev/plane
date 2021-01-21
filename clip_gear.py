@@ -73,7 +73,7 @@ def dbb(img, b, color="R"):
         color = (0, 255, 0)
     elif color == "B":
         color = (255, 0, 0)
-    
+
     for l in lines:
         cv2.line(img, l[0], l[1], color, 2)
 
@@ -93,12 +93,12 @@ def main():
             success, image = vidcap.read()
             if not success: # 视频到头
                 break
-            
+
             flg = flg_det.predict(image, transforms=transforms)
             if len(flg) == 0: # 没有起落架，过
                 idx += 25
                 continue
-            
+
             g = flg[0]["bbox"]
             g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
             gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
@@ -108,8 +108,10 @@ def main():
             gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
             g[2] = g[0] + g[2]
             g[3] = g[1] + g[3]
+            cv2.imwrite(osp.join(args.output, "gear", "{}-{}-gear.png".format(vid_name, str(idx).zfill(6))), crop(image, g, "length"))
 
-           
+
+
             if count != 0: # 前面的帧看到人在起落架周围了，直接保存
                 if savegs:
                     cv2.imwrite(osp.join(args.output, "gs", "{}-{}-gs.png".format(vid_name, str(idx).zfill(6))), crop(image, gs))
@@ -121,8 +123,8 @@ def main():
 
             savegs = savegr = False
 
-            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data'] 
-            
+            people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
+
             for pidx, p in enumerate(people):
                 if p['label'] != "person":
                     continue
@@ -133,12 +135,12 @@ def main():
                 if pinbb(pc, gr):
                     count = math.floor(25/args.itv)
                     savegr = True
-                
+
                 if pinbb(pc, gs):
                     count = math.floor(25/args.itv)
                     savegs = True
-                
-            
+
+
             # 检测完人再乱涂乱画
             dpoint(image, gc, "R")
             dbb(image, g)
@@ -152,5 +154,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
