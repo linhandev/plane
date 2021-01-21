@@ -28,8 +28,9 @@ def predict(img_data, names):
         obj_type = []
         pos = []
         for l in res:
-            obj_type.append(l["label"])
-            pos.append([l['left'], l['top'], l['right'], l['bottom']])
+            if l["label"] == "person":
+                obj_type.append(l["label"])
+                pos.append([l['left'], l['top'], l['right'], l['bottom']])
         with open(osp.join(args.output, names[idx]+".xml"), "w") as f:
             print(to_voc(names[idx], obj_type, pos), file=f)
 
