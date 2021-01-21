@@ -88,8 +88,8 @@ def det(images, names):
 
 
 def draw(image, name, flg, people):
-    print(flg)
-    print(people)
+    # print(flg)
+    # print(people)
     g = flg[0]["bbox"]
     g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
     gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
@@ -134,7 +134,7 @@ def main():
                 det(images, names)
 
             images.append(image)
-            names.append(str(idx).zfill(6)+".png")
+            names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
             idx += args.itv
 
         shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
