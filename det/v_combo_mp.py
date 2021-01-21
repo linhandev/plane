@@ -81,14 +81,6 @@ def dbb(img, b, color="R"):
     for l in lines:
         cv2.line(img, l[0], l[1], color, 2)
 
-def det(images, names):
-    print("doing inference")
-    flgs = flg_det.batch_predict(images, transforms=transforms)
-    people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
-    for idx in range(len(names)):
-        draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
-    print("finish inference")
-
 def draw(image, name, flg, people):
     # print(flg)
     # print(people)
@@ -119,14 +111,8 @@ def draw(image, name, flg, people):
 
     cv2.imwrite(osp.join(args.output, "draw", name), image)
 
-
-def main():
-    # mp.set_start_method('spawn')
-    # image_q = mp.Queue()
-    # p = mp.Process(target=det, args=(image_q, flg_det, people_det))
-    # p.start()
-
-    for vid_name in tqdm(os.listdir(args.input)):
+def reader(image_q):
+     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
@@ -140,11 +126,11 @@ def main():
             vidcap.set(1, idx)
             success, image = vidcap.read()
             if not success:
-                det(images, names)
+                image_q.put([images, names])
                 break
 
             if len(names) == args.bs: # 视频到头
-                det(images, names)
+                image_q.put([images, names])
 
             if image is not None:
                 images.append(image)
@@ -155,5 +141,23 @@ def main():
 
         # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
+def main():
+    # mp.set_start_method('spawn')
+    image_q = mp.Queue()
+    p = mp.Process(target=reader, args=(image_q,))
+    p.start()
+
+    while True:
+        print(image_q.qsize())
+        images, names = image_q.get()
+        
+        print("doing inference")
+        flgs = flg_det.batch_predict(images, transforms=transforms)
+        people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
+        for idx in range(len(names)):
+            draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
+        print("finish inference")
+    
+    p.join()
 if __name__ == "__main__":
     main()
