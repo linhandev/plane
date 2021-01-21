@@ -112,48 +112,51 @@ def draw(image, name, flg, people):
     cv2.imwrite(osp.join(args.output, "draw", name), image)
 
 def reader(image_q):
-     for vid_name in tqdm(os.listdir(args.input)):
-        print("processing {}".format(vid_name))
-        vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
-        idx = 0
+    #  for vid_name in tqdm():
+    print("processing {}".format(vid_name))
+    vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
+    idx = 0
 
-        vid_name = vid_name.split(".")[0]
-        os.mkdir(osp.join(args.output, "draw", vid_name))
-        images = []
-        names =  []
-        while True:
-            print(idx)
-            vidcap.set(1, idx)
-            success, image = vidcap.read()
-            
-            if not success:
-                image_q.put([images, names])
-                print("put, image qsize", image_q.qsize())
-                break
+    vid_name = vid_name.split(".")[0]
+    os.mkdir(osp.join(args.output, "draw", vid_name))
+    images = []
+    names =  []
+    while True:
+        print(idx)
+        vidcap.set(1, idx)
+        success, image = vidcap.read()
+        
+        if not success:
+            image_q.put([images, names])
+            print("put, image qsize", image_q.qsize())
+            break
 
-            if image is not None:
-                images.append(image)
-                names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
-            else:
-                print("None image", idx)
-            
+        if image is not None:
+            images.append(image)
+            names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
+        else:
+            print("None image", idx)
+        
 
-            if len(names) == args.bs:
-                image_q.put([images, names])
-                print("put, image qsize", image_q.qsize())
-                names = []
-                images = []
+        if len(names) == args.bs:
+            image_q.put([images, names])
+            print("put, image qsize", image_q.qsize())
+            names = []
+            images = []
 
-            
-            idx += args.itv
+        
+        idx += args.itv
 
         # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
 def main():
     # mp.set_start_method('spawn')
     image_q = mp.Queue()
-    p = mp.Process(target=reader, args=(image_q,))
-    p.start()
+    args = [(image_q, name) for name in os.listdir(args.input)]
+    with mp.Pool(processes=4) as pool:
+        pool.starmap(reader, args)
+        # mp.Process(target=reader, args=(image_q,))
+    
 
     while True:
         print("image queue qsize", image_q.qsize())
