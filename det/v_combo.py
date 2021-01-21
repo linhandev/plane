@@ -1,7 +1,6 @@
 import os.path as osp
 import os
 import argparse
-import math
 import shutil
 
 from tqdm import tqdm
@@ -9,7 +8,7 @@ import cv2
 import paddlehub as hub
 import paddlex as pdx
 from paddlex.det import transforms
-
+import numpy as np 
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/data/data67498/video/train", help="视频存放路径")
@@ -79,10 +78,12 @@ def dbb(img, b, color="R"):
         cv2.line(img, l[0], l[1], color, 2)
 
 def det(images, names):
-    flgs = flg_det.predict(images, transforms=transforms)
-    people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
+    flgs = flg_det.batch_predict(images, transforms=transforms)
+    people = people_det.object_detection(images=images, use_gpu=True)[0]['data']
+    print(people)
     for idx in range(len(names)):
         draw(images[idx], names[idx], flgs[idx], people[idx])
+
 
 def draw(image, name, flg, people):
     g = flg["bbox"]
