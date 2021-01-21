@@ -82,7 +82,7 @@ def dbb(img, b, color="R"):
         cv2.line(img, l[0], l[1], color, 2)
 
 def det(image_q):
-    while 1:
+    while True:
         print("image queue size", image_q.qsize())
         images, names = image_q.get()
         print("doing inference")
@@ -90,7 +90,7 @@ def det(image_q):
         people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
         for idx in range(len(names)):
             draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
-
+        print("finish inference")
 
 def draw(image, name, flg, people):
     # print(flg)
@@ -156,7 +156,7 @@ def main():
                 print("None image", idx)
             idx += args.itv
 
-        shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
+        # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
 if __name__ == "__main__":
     main()
