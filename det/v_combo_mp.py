@@ -105,7 +105,7 @@ def writer_func(writer_q):
 
         cv2.imwrite(osp.join(args.output, "draw", name), image)
 
-def reader_func(image_q, vid_names):
+def reader_func(reader_q, vid_names):
      for vid_name in vid_names:
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
@@ -120,8 +120,8 @@ def reader_func(image_q, vid_names):
             success, image = vidcap.read()
             
             if not success:
-                image_q.put([images, names])
-                print("put, image qsize", image_q.qsize())
+                reader_q.put([images, names])
+                print("put, image qsize", reader_q.qsize())
                 break
 
             if image is not None:
@@ -132,8 +132,8 @@ def reader_func(image_q, vid_names):
             
 
             if len(names) == args.bs:
-                image_q.put([images, names])
-                print("put, image qsize", image_q.qsize())
+                reader_q.put([images, names])
+                print("put, image qsize", reader_q.qsize())
                 names = []
                 images = []
 
@@ -171,14 +171,14 @@ def main(args):
 
     print("finish loading")
     while True:
-        print("image queue qsize", image_q.qsize())
-        images, names = image_q.get()
+        print("image queue qsize", reader_q.qsize())
+        images, names = reader_q.get()
         
         print("doing inference")
         flgs = flg_det.batch_predict(images, transforms=transforms)
         people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
         for idx in range(len(names)):
-            writer_q.append([images[idx], names[idx], flgs[idx], people[idx]['data']])
+            writer_q.put([images[idx], names[idx], flgs[idx], people[idx]['data']])
         print("finish inference")
     
     for reader in readers:
