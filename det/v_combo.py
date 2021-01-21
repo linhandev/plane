@@ -82,7 +82,7 @@ def dbb(img, b, color="R"):
 
 def det(images, names):
     flgs = flg_det.batch_predict(images, transforms=transforms)
-    people = people_det.object_detection(images=images, use_gpu=True)
+    people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
     for idx in range(len(names)):
         draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
 
@@ -123,21 +123,24 @@ def main():
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
         idx = 0
-        print(idx)
 
         vid_name = vid_name.split(".")[0]
         os.mkdir(osp.join(args.output, "draw", vid_name))
         images = []
         names =  []
         while True:
+            print(idx)
             vidcap.set(1, idx)
             success, image = vidcap.read()
             if len(names) == args.bs or not success: # 视频到头
                 det(images, names)
-
-            images.append(image)
-            names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
+            if image is not None:
+                images.append(image)
+                names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
+            else:
+                print("None image", idx)
             idx += args.itv
+        
 
         shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
