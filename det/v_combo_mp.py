@@ -22,12 +22,6 @@ parser.add_argument("--itv", type=int, default=25, help="检测抽帧间隔")
 args = parser.parse_args()
 
 
-people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
-
-flg_det = pdx.load_model(args.model)
-transforms = transforms.Compose([
-    transforms.Resize(), transforms.Normalize()
-])
 
 # 坐标的顺序是按照crop时下标的顺序，坐标第一个就是下标第一维，cv2里面的应该和这个是反的
 
@@ -110,56 +104,62 @@ def draw(image, name, flg, people):
 
     cv2.imwrite(osp.join(args.output, "draw", name), image)
 
-def reader(image_q, vid_name):
-    #  for vid_name in tqdm():
-    print("processing {}".format(vid_name))
-    vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
-    idx = 0
+def reader(image_q, vid_names):
+     for vid_name in vid_names:
+        print("processing {}".format(vid_name))
+        vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
+        idx = 0
 
-    vid_name = vid_name.split(".")[0]
-    os.mkdir(osp.join(args.output, "draw", vid_name))
-    images = []
-    names =  []
-    while True:
-        print(idx)
-        vidcap.set(1, idx)
-        success, image = vidcap.read()
-        
-        if not success:
-            image_q.put([images, names])
-            print("put, image qsize", image_q.qsize())
-            break
+        vid_name = vid_name.split(".")[0]
+        os.mkdir(osp.join(args.output, "draw", vid_name))
+        images = []
+        names =  []
+        while True:
+            print(idx)
+            vidcap.set(1, idx)
+            success, image = vidcap.read()
+            
+            if not success:
+                image_q.put([images, names])
+                print("put, image qsize", image_q.qsize())
+                break
 
-        if image is not None:
-            images.append(image)
-            names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
-        else:
-            print("None image", idx)
-        
+            if image is not None:
+                images.append(image)
+                names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
+            else:
+                print("None image", idx)
+            
 
-        if len(names) == args.bs:
-            image_q.put([images, names])
-            print("put, image qsize", image_q.qsize())
-            names = []
-            images = []
+            if len(names) == args.bs:
+                image_q.put([images, names])
+                print("put, image qsize", image_q.qsize())
+                names = []
+                images = []
 
-        
-        idx += args.itv
+            
+            idx += args.itv
 
-        # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
+            # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
 def main(args):
     # mp.set_start_method('spawn')
     image_q = mp.Manager().Queue()
     p_num = 4
     names = os.listdir(args.input)
-    ps = mp.Process(target=reader, args=(image_q,))
-
-    # names = os.listdir(args.input)
-    # args = [(image_q, name) for name in names]
-    # with mp.Pool(processes=4) as pool:
-    #     res = pool.starmap_async(reader, args)
-    # res.get()
+    names_chunk = [[] for _ in range(p_num)]
+    for idx in range(len(names)):
+        names_chunk[idx%p_num].append(names[idx])
+    
+    ps = [mp.Process(target=reader, args=(image_q, names_chunk[idx])) for idx in range(p_num)]
+    for p in ps:
+        p.start()
+    
+    people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
+    flg_det = pdx.load_model(args.model)
+    transforms = transforms.Compose([
+        transforms.Resize(), transforms.Normalize()
+    ])
 
     while True:
         print("image queue qsize", image_q.qsize())
@@ -172,5 +172,8 @@ def main(args):
             draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
         print("finish inference")
     
+    for p in ps:
+        p.join()
+
 if __name__ == "__main__":
     main(args)
