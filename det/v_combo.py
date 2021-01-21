@@ -135,7 +135,7 @@ def main():
                 idx += 25
                 continue
 
-        shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "fin"))
+        shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
 if __name__ == "__main__":
     main()
