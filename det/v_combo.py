@@ -83,8 +83,9 @@ def dbb(img, b, color="R"):
 
 def det(image_q):
     while 1:
-        print(q.size())
-        images, names = q.get()
+        print("image queue size", image_q.qsize())
+        images, names = image_q.get()
+        print("doing inference")
         flgs = flg_det.batch_predict(images, transforms=transforms)
         people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
         for idx in range(len(names)):
@@ -123,7 +124,7 @@ def draw(image, name, flg, people):
 
 
 def main():
-    mp.set_start_method('spawn')
+    # mp.set_start_method('spawn')
     image_q = mp.Queue()
     p = mp.Process(target=det, args=(image_q,))
     p.start()
@@ -142,11 +143,11 @@ def main():
             vidcap.set(1, idx)
             success, image = vidcap.read()
             if not success:
-                det(images, names)
+                image_q.put([images, names])
                 break
 
             if len(names) == args.bs: # 视频到头
-                det(images, names)
+                image_q.put([images, names])
 
             if image is not None:
                 images.append(image)
