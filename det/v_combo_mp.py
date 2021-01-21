@@ -151,12 +151,15 @@ def reader(image_q, vid_name):
 def main(args):
     # mp.set_start_method('spawn')
     image_q = mp.Manager().Queue()
+    p_num = 4
     names = os.listdir(args.input)
-    args = [(image_q, name) for name in names]
-    with mp.Pool(processes=4) as pool:
-        pool.starmap_async(reader, args)
-        # mp.Process(target=reader, args=(image_q,))
-    
+    ps = mp.Process(target=reader, args=(image_q,))
+
+    # names = os.listdir(args.input)
+    # args = [(image_q, name) for name in names]
+    # with mp.Pool(processes=4) as pool:
+    #     res = pool.starmap_async(reader, args)
+    # res.get()
 
     while True:
         print("image queue qsize", image_q.qsize())
