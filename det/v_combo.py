@@ -1,8 +1,9 @@
 import os.path as osp
 import os
 import argparse
-import math
 import shutil
+import multiprocessing as mp
+
 
 from tqdm import tqdm
 import cv2
@@ -10,21 +11,19 @@ import paddlehub as hub
 import paddlex as pdx
 from paddlex.det import transforms
 
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+
 
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/data/data67498/video/train", help="视频存放路径")
 parser.add_argument("-o", "--output", type=str, default="/home/aistudio/data/draw", help="结果帧存放路径")
-parser.add_argument("-m", "--model", type=str, default="/home/aistudio/pdx/output/yolov3/best_model", help="起落架检测模型路径")
+parser.add_argument("-m", "--model", type=str, default="/home/aistudio/plane/gear/output/yolov3/epoch_20", help="起落架检测模型路径")
 parser.add_argument("--bs", type=int, default=8)
 parser.add_argument("--itv", type=int, default=25, help="检测抽帧间隔")
 args = parser.parse_args()
 
 
-people_det = hub.Module(name="yoloparser.add_argument("--itv", type=int, default=25, help="检测抽帧间隔")
-args = parser.parse_args()
-
-
-people_det = hub.Module(name="yolov3_resnet50_vd_coco20v3_resnet50_vd_coco2017")
+people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
 
 flg_det = pdx.load_model(args.model)
 transforms = transforms.Compose([
@@ -83,13 +82,19 @@ def dbb(img, b, color="R"):
         cv2.line(img, l[0], l[1], color, 2)
 
 def det(images, names):
-    flgs = flg_det.predict(images, transforms=transforms)
-    people = people_det.object_detection(images=[image], use_gpu=True)[0]['data']
+    print("doing inference")
+    flgs = flg_det.batch_predict(images, transforms=transforms)
+    people = people_det.object_detection(images=images, use_gpu=True, visualization=False)
     for idx in range(len(names)):
-        draw(images[idx], names[idx], flgs[idx], people[idx])
+        draw(images[idx], names[idx], flgs[idx], people[idx]['data'])
+    print("finish inference")
 
 def draw(image, name, flg, people):
-    g = flg["bbox"]
+    # print(flg)
+    # print(people)
+    if len(flg) == 0:
+        return
+    g = flg[0]["bbox"]
     g = toint([g[1], g[0], g[3], g[2]]) # 起落架范围
     gc = toint([g[0]+g[2]/2, g[1]+g[3]/2]) # 起落架中心
     r = [2, 3] # HWC,纵横放大几倍
@@ -116,6 +121,11 @@ def draw(image, name, flg, people):
 
 
 def main():
+    # mp.set_start_method('spawn')
+    # image_q = mp.Queue()
+    # p = mp.Process(target=det, args=(image_q, flg_det, people_det))
+    # p.start()
+
     for vid_name in tqdm(os.listdir(args.input)):
         print("processing {}".format(vid_name))
         vidcap = cv2.VideoCapture(osp.join(args.input, vid_name))
@@ -126,20 +136,24 @@ def main():
         images = []
         names =  []
         while True:
+            print(idx)
             vidcap.set(1, idx)
             success, image = vidcap.read()
-            if len(names) == not success: # 视频到头
+            if not success:
+                det(images, names)
+                break
+
+            if len(names) == args.bs: # 视频到头
                 det(images, names)
 
-            images.append(image)
-            names.append(str(idx).zfill(6)+".png")
+            if image is not None:
+                images.append(image)
+                names.append(osp.join(vid_name, vid_name + "-" + str(idx).zfill(6)+".png"))
+            else:
+                print("None image", idx)
             idx += args.itv
 
-            if len(flg) == 0: # 没有起落架，过
-                idx += 25
-                continue
-
-        shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
+        # shutil.move(osp.join(args.output, "draw", vid_name), osp.join(args.output, "draw-fin"))
 
 if __name__ == "__main__":
     main()
