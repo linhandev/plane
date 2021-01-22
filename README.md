@@ -10,7 +10,7 @@ cd $folder
 ffmpeg -framerate 1 -pattern_type glob -i "*.png" ${folder}.mkv
 mv ${folder}.mkv ../../mkv
 cd ..
-rm $folder -rf
+# rm $folder -rf
 done
 ```
 
