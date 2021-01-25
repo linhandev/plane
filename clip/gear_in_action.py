@@ -11,7 +11,7 @@ vid_dir = "/home/aistudio/plane/vid-split/val"
 time_dir = "/home/aistudio/plane/time/all"
 out_dir = "/home/aistudio/plane/gs-action"
 bs = 8
-itv = 8
+itv = 75
 
 def toint(l):
     return [int(x) for x in l]
@@ -85,14 +85,16 @@ for vid_name in tqdm(os.listdir(vid_dir)):
     # input("here")
     vid_name = vid_name.split(".")[0]
     # os.mkdir(osp.join(out_dir, vid_name))
-    with open(osp.join(time_dir, vid_name + ".txt"), "r") as f:
-        times = f.read()
-    s, e, action = times.split(" ")
+    # with open(osp.join(time_dir, vid_name + ".txt"), "r") as f:
+    #     times = f.read()
+    # s, e, action = times.split(" ")
+    s, e = 30, 200
     s, e = int(s), int(e)
+    input("here")
     frame_data = []
     index = []
 
-    for frame_idx in r:
+    for frame_idx in range(s*25, e*25, itv):
         vidcap.set(1, frame_idx)
         success, image = vidcap.read()
         if success and image is not None:
@@ -115,7 +117,7 @@ for vid_name in tqdm(os.listdir(vid_dir)):
                     l = 128 # 以gc为中心，围一个2l边长的正方形
                     gs = [gc[0]-l, gc[1]-l, gc[0]+l, gc[1]+l]
                     img = crop(img, gs)
-                    cv2.imwrite("/home/aistudio/plane/gear-square/val/p/"+vid_name+"-"+str(index[idx])+'.png', img)
+                    cv2.imwrite("/home/aistudio/plane/gear-square/val/"+vid_name+"-"+str(index[idx])+'.png', img)
 
                 frame_data = []
                 index = []
