@@ -7,7 +7,7 @@ from paddlex.det import transforms
 model = pdx.load_model('output/gear_clas/epoch_10')
 img_dir = "/home/aistudio/data/val"
 transforms = transforms.Compose([
-    transforms.Resize(), transforms.Normalize()
+    transforms.Normalize()
 ])
 
 names = []
