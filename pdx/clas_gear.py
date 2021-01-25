@@ -16,23 +16,23 @@ train_transforms = transforms.Compose([
     transforms.RandomHorizontalFlip(),
     transforms.Normalize()
 ])
-eval_transforms = transforms.Compose([
-    transforms.Normalize()
-])
+# eval_transforms = transforms.Compose([
+#     transforms.Normalize()
+# ])
 
 # 定义训练和验证所用的数据集
 # API说明：https://paddlex.readthedocs.io/zh_CN/develop/apis/datasets.html#paddlex-datasets-imagenet
 train_dataset = pdx.datasets.ImageNet(
-    data_dir='',
-    file_list='vegetables_cls/train_list.txt',
-    label_list='vegetables_cls/labels.txt',
+    data_dir='/home/aistudio/data/data67498/train',
+    file_list='/home/aistudio/data/data67498/train/train_list.txt',
+    label_list='/home/aistudio/data/data67498/train/labels.txt',
     transforms=train_transforms,
     shuffle=True)
-eval_dataset = pdx.datasets.ImageNet(
-    data_dir='vegetables_cls',
-    file_list='vegetables_cls/val_list.txt',
-    label_list='vegetables_cls/labels.txt',
-    transforms=eval_transforms)
+# eval_dataset = pdx.datasets.ImageNet(
+#     data_dir='vegetables_cls',
+#     file_list='vegetables_cls/val_list.txt',
+#     label_list='vegetables_cls/labels.txt',
+#     transforms=eval_transforms)
 
 # 初始化模型，并进行训练
 # 可使用VisualDL查看训练指标，参考https://paddlex.readthedocs.io/zh_CN/develop/train/visualdl.html
@@ -44,8 +44,8 @@ model.train(
     num_epochs=10,
     train_dataset=train_dataset,
     train_batch_size=32,
-    eval_dataset=eval_dataset,
+    # eval_dataset=eval_dataset,
     lr_decay_epochs=[4, 6, 8],
     learning_rate=0.025,
-    save_dir='output/resnet50_vd_ssld',
+    save_dir='output/gear_clas',
     use_vdl=True)
