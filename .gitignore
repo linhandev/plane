@@ -3,7 +3,7 @@
 *.mp4
 *.zip
 model/
-
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
