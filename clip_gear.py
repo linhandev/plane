@@ -14,13 +14,12 @@ from paddlex.det import transforms
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("-i", "--input", type=str, default="/home/aistudio/test/video", help="视频存放路径")
 parser.add_argument("-o", "--output", type=str, default="/home/aistudio/test/frame", help="结果帧存放路径")
-parser.add_argument("-m", "--model", type=str, default="/home/aistudio/pdx/output/yolov3/best_model", help="起落架检测模型路径")
+parser.add_argument("-m", "--model", type=str, default="/home/aistudio/plane/gear/output/yolov3/epoch_20", help="起落架检测模型路径")
 parser.add_argument("--itv", type=int, default=8, help="人进入起落架区域，抽帧间隔")
 args = parser.parse_args()
 
 
 people_det = hub.Module(name="yolov3_resnet50_vd_coco2017")
-
 flg_det = pdx.load_model(args.model)
 transforms = transforms.Compose([
     transforms.Resize(), transforms.Normalize()
