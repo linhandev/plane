@@ -14,6 +14,8 @@ import paddlex as pdx
 # API说明https://paddlex.readthedocs.io/zh_CN/develop/apis/transforms/cls_transforms.html
 train_transforms = transforms.Compose([
     transforms.RandomHorizontalFlip(),
+    transforms.RandomRotate(),
+    transforms.RandomDistort(),
     transforms.Normalize()
 ])
 # eval_transforms = transforms.Compose([
