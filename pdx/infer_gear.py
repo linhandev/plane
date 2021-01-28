@@ -8,6 +8,7 @@ import cv2
 from tqdm import tqdm
 import numpy as np
 
+<<<<<<< HEAD
 
 def toint(l):
     return [int(x) for x in l]
@@ -128,3 +129,20 @@ for vid_name in tqdm(os.listdir(vid_dir)):
                         count += 1
                 flg_data = []
                 frame_data = []
+=======
+model = pdx.load_model('output/gear_clas/epoch_10')
+img_dir = "/home/aistudio/data/val"
+transforms = transforms.Compose([
+    transforms.Normalize()
+])
+
+names = []
+for n in os.listdir(img_dir):
+    names.append(osp.join(img_dir, n))
+    # print(names)
+    if len(names) == 8:
+        result = model.batch_predict(names, transforms=transforms)
+        names = []
+        print(result)
+# pdx.det.visualize(image_name, result, threshold=0.001, save_dir='./output/plane_lg')
+>>>>>>> 671ca6d647624778dc9a2e178df38e8939ed006d
