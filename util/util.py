@@ -1,53 +1,27 @@
+from math import hypot
+
 import cv2
-import paddlex as pdx
-from paddlex.det import transforms as dT
-
-
-class PdxDet:
-    imgs = []
-    names = []
-
-    def __init__(self, model_path="../model/best/flg_det/", bs=2):
-        self.model = pdx.load_model(model_path)
-        self.transform = dT.Compose([dT.Resize(), dT.Normalize()])
-        self.bs = bs
-
-    def predict(self, img):
-        bbs = self.model.predict(img, transforms=self.transform)
-        res = []
-        if len(bbs) != 0:
-            for bb in bbs:
-                res.append(BB(bb["bbox"], type="pdx"))
-        return res
-
-    def batch_predict(self, imgs):
-        res_batch = self.model.batch_predict(imgs, transforms=self.transform)
-        res = []
-        for idx, bbs in enumerate(res_batch):
-            res.append([])
-            for bb in bbs:
-                res[-1].append(BB(bb["bbox"], type="pdx"))
-        return res
-
-    def add(self, img, name):
-        self.imgs.append(img)
-        self.names.append(str(name))
-        if len(self.imgs) == self.bs:
-            return self.flush()
-        else:
-            return [], [], []
-
-    def flush(self):
-        res = self.batch_predict(self.imgs)
-        imgs = self.imgs.copy()
-        self.imgs = []
-        names = self.names.copy()
-        self.names = []
-        return imgs, names, res
 
 
 class Stream:
     def __init__(self, path, itv=25, start_frame=0):
+        """创建视频流.
+
+        Parameters
+        ----------
+        path : str
+            视频流地址，cv2.VideoCapture接受的任何流都行.
+        itv : int
+            抽帧间隔.
+        start_frame : int
+            从第几帧开始抽帧.
+
+        Returns
+        -------
+        type
+            一个可以下标索引，可以迭代的视频流对象.
+
+        """
         # TODO: 处理异常,判断打开成功
         vid = cv2.VideoCapture(path)
         self.idx = start_frame
@@ -62,6 +36,19 @@ class Stream:
         self.vid = vid
 
     def __getitem__(self, idx):
+        """使其支持[].
+
+        Parameters
+        ----------
+        idx : int
+            要第几个itv的数据.
+
+        Returns
+        -------
+        type
+            返回 idx × itv 帧的数据.
+
+        """
         # TODO: 研究为什么只能到 -2itv
         idx = min(self.frame_count - self.itv * 2, idx * self.itv)
         self.vid.set(1, idx)
@@ -75,6 +62,14 @@ class Stream:
         return self
 
     def __next__(self):
+        """迭代支持.
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
         self.idx += self.itv
         self.vid.set(1, self.idx)
         success, image = self.vid.read()
@@ -87,6 +82,7 @@ class BB:
     """
     x是宽,y是高
     cv2里numpy下标是 HWC
+    有选择的时候一律写 WHC
     """
 
     wmin = 0
@@ -134,21 +130,104 @@ class BB:
         self.hc = (self.hmin + self.hmax) // 2
 
     def __repr__(self):
-        return "BB: WHC ({}, {}), ({}, {})".format(
-            self.wmin, self.wmax, self.hmin, self.hmax
-        )
+        """打印支持.
+
+        Returns
+        -------
+        type
+            Description of returned object.
+
+        """
+        return "BB: WHC ({}, {}), ({}, {})".format(self.wmin, self.wmax, self.hmin, self.hmax)
 
     def square(self, length):
+        """返回一个和self同中心，length边长的bb.
+
+        Parameters
+        ----------
+        length : int
+            目标正方形bb的边长.
+
+        Returns
+        -------
+        BB
+            和self同中心，length边长的bb.
+
+        """
         l = length // 2
         return BB([self.wc - l, self.hc - l, self.wc + l, self.hc + l], "WH")
 
     def region(self, ratio):
+        """返回一个和self同中心，宽，长分别为ratio倍的bb.
+
+        Parameters
+        ----------
+        ratio : list/tuple
+            目标bb宽和长分别为当前bb的多少倍.
+
+        Returns
+        -------
+        BB
+            和self同中心，宽，长分别为ratio倍的bb.
+
+        """
         wl = self.wmax - self.wmin
         hl = self.hmax - self.hmin
         r = ratio
         wl = int(wl * r[0] / 2)
         hl = int(hl * r[1] / 2)
         return BB([self.wc - wl, self.hc - hl, self.wc + wl, self.hc + hl], "WH")
+
+    def center(self):
+        return [self.wc, self.hc]
+
+    def contains(self, obj):
+        """当前bb是否包含一个点或者另一个bb中心.
+
+        Parameters
+        ----------
+        obj : BB/list/tuple
+            一个BB或者一个点.
+
+        Returns
+        -------
+        Bool
+            当前bb是否包含一个点或者另一个bb中心.
+
+        """
+        if isinstance(obj, BB):
+            p = obj.center()
+        elif isinstance(obj, list):
+            p = obj
+        if self.wmin <= p[0] <= self.wmax and self.hmin <= p[1] <= self.hmax:
+            return True
+        return False
+
+    def transpose(self, bb):
+        """在当前box里面做检测，将得到的结果bb转换为当前bb所在坐标系的坐标.
+        比如当前bb是起落架周围256区域，在这里面检测到一个person_bb，则 self.transpose(person_bb) 得到这个人bb在整张图上的
+        位置
+
+        Parameters
+        ----------
+        bb : BB
+            self内部的一个bb.
+
+        Returns
+        -------
+        type
+            变换成大坐标系bb的位置.
+
+        """
+        return BB(
+            [
+                self.wmin + bb.wmin,
+                self.hmin + bb.hmin,
+                self.wmin + bb.wmax,
+                self.hmin + bb.hmax,
+            ],
+            "WH",
+        )
 
 
 def crop(img, b):
@@ -169,28 +248,42 @@ def crop(img, b):
     return img[b.hmin : b.hmax, b.wmin : b.wmax, :]
 
 
-def dist(a, b):
-    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
-
-
-def pinbb(p, bb):
-    if bb[0] <= p[0] <= bb[2] and bb[1] <= p[1] <= bb[3]:
-        return True
-    return False
-
-
 def dpoint(img, p, color="R"):
+    """在img的p位置上画一个color颜色的点.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        图片.
+    p : list
+        按照cv2格式，WH.
+    color : str
+        R,G,B.
+
+    """
     if color == "R":
         color = (0, 0, 255)
     elif color == "G":
         color = (0, 255, 0)
     elif color == "B":
         color = (255, 0, 0)
-    cv2.circle(img, (p[1], p[0]), 1, color, 4)
+    cv2.circle(img, (p[0], p[1]), 1, color, 4)
 
 
 def dbb(img, b, color="R"):
-    ymin, xmin, ymax, xmax = b
+    """在img上b范围画一个color颜色的bounding box.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        图片.
+    b : BB
+        BB instance.
+    color : str
+        R,G,B.
+
+    """
+    xmin, ymin, xmax, ymax = b.wmin, b.hmin, b.wmax, b.hmax
     lines = [
         [(xmin, ymin), (xmin, ymax)],
         [(xmax, ymin), (xmax, ymax)],
@@ -209,6 +302,16 @@ def dbb(img, b, color="R"):
 
 
 def dpn(img, res):
+    """在图像左上角画红/绿色块，表示分类结果.
+
+    Parameters
+    ----------
+    img : np.ndarray
+        需要标识的图像.
+    res : Bool
+        分类的结果.
+
+    """
     if img.shape[0] <= 64:
         img = img[8:16, 8:16, :]
     else:
