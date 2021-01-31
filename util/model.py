@@ -41,7 +41,7 @@ class HumanClas:
 
 
 class PdxDet:
-    def __init__(self, model_path, bs=2, thresh=0.9):
+    def __init__(self, model_path, bs=2, thresh=0.95):
         self.model = pdx.load_model(model_path)
         self.transform = dT.Compose([dT.Resize(), dT.Normalize()])
         self.bs = bs
@@ -90,6 +90,7 @@ class PdxDet:
             res.append([])
             for bb in bbs:
                 if bb["score"] > self.thresh:
+                    # TODO: 对一个图片中的多个结果按照左下角位置进行排序
                     res[-1].append(BB(bb["bbox"], type="pdx"))
         return res
 

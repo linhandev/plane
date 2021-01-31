@@ -4,49 +4,67 @@ import cv2
 
 
 class Stream:
-    def __init__(self, path, itv=25, start_frame=0):
+    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=5, start_frame=0):
         """创建视频流.
 
         Parameters
         ----------
-        path : str
-            视频流地址，cv2.VideoCapture接受的任何流都行.
-        itv : int
-            抽帧间隔.
+        vid_path : str
+            视频流地址，cv2.VideoCapture能接受的任何流都行.
+        toi_path : str
+            如果有视频感兴趣时间区域的文件，写路径.
+        itv_sparse : int
+            稀疏抽帧间隔，在toi外面按这个间隔抽帧.
+        itv_dense : int
+            密集抽帧间隔，在toi里边按照这个间隔抽帧.
         start_frame : int
-            从第几帧开始抽帧.
+            从第几帧开始，基本是调试功能.
 
         Returns
         -------
         type
             一个可以下标索引，可以迭代的视频流对象.
-
         """
+
         # TODO: 处理异常,判断打开成功
-        vid = cv2.VideoCapture(path)
+        vid = cv2.VideoCapture(vid_path)
         self.idx = start_frame
-        self.itv = itv
+        self.sitv = itv_sparse
+        self.ditv = itv_dense
+        self.fstart = self.fend = 0
+        self.type = None
         self.fps = vid.get(cv2.CAP_PROP_FPS)
         self.size = [
             vid.get(cv2.CAP_PROP_FRAME_WIDTH),
             vid.get(cv2.CAP_PROP_FRAME_HEIGHT),
         ]
         self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.len = int(vid.get(cv2.CAP_PROP_FRAME_COUNT) / self.itv) - 1
+        self.len = int(vid.get(cv2.CAP_PROP_FRAME_COUNT) / self.sitv) - 1
+
+        if toi_path is not None:
+            with open(toi_path, "r") as f:
+                time_str = f.read()
+            self.fstart, self.fend, self.type = time_str.split(" ")
+            self.fstart = int(self.fstart)
+            self.fend = int(self.fend)
+            self.fstart *= self.fps
+            self.fend *= self.fps
+
         self.vid = vid
 
     def __getitem__(self, idx):
         """使其支持[].
+        按照稀疏间隔取帧
 
         Parameters
         ----------
         idx : int
-            要第几个itv的数据.
+            要第几个sitv的数据.
 
         Returns
         -------
         type
-            返回 idx × itv 帧的数据.
+            返回 idx × sitv 帧的数据.
 
         """
         # TODO: 研究为什么只能到 -2itv
@@ -64,18 +82,23 @@ class Stream:
     def __next__(self):
         """迭代支持.
 
-        Returns
+        Returnstype
         -------
-        type
-            Description of returned object.
+        tuple
+            当前帧的id和帧图片.
 
         """
-        self.idx += self.itv
+        # TODO: 添加vidcapture支持
+        if self.fstart <= self.idx <= self.fend:
+            self.idx += self.ditv
+            print("In toi, curr idx: {}".format(self.idx))
+        else:
+            self.idx += self.sitv
         self.vid.set(1, self.idx)
         success, image = self.vid.read()
         if not success:
             raise StopIteration
-        return image
+        return self.idx, image
 
 
 class BB:
@@ -90,7 +113,7 @@ class BB:
     hmin = 0
     hmax = 0
 
-    def __init__(self, p, type="WH"):
+    def __init__(self, p, type="WH", size=[None, None]):
         """创建一个bb.
 
         Parameters
@@ -100,6 +123,7 @@ class BB:
         type : str
             不同的格式.
             pdx: w左上角,h左上角,w长度,h长度
+        size : tuple
 
         Returns
         -------
@@ -140,8 +164,9 @@ class BB:
         """
         return "BB: WHC ({}, {}), ({}, {})".format(self.wmin, self.wmax, self.hmin, self.hmax)
 
-    def square(self, length):
+    def square(self, length, restrict=False):
         """返回一个和self同中心，length边长的bb.
+        如果有宽度和高度，可以限制bb不出图片
 
         Parameters
         ----------
@@ -155,7 +180,13 @@ class BB:
 
         """
         l = length // 2
-        return BB([self.wc - l, self.hc - l, self.wc + l, self.hc + l], "WH")
+        if restrict and self.width is not None and self.height is not None:
+            wl, hl = max(self.wc - l, 0), max(self.hc - l, 0)
+            wh, hh = min(self.wc + l, self.width), min(self.hc + l, self.height)
+        else:
+            wl, hl = self.wc - l, self.hc - l
+            wh, hh = self.wc + l, self.hc + l
+        return BB([wl, hl, wh, hh], "WH")
 
     def region(self, ratio):
         """返回一个和self同中心，宽，长分别为ratio倍的bb.
@@ -245,6 +276,7 @@ def crop(img, b):
     type
         切下来的部分.
     """
+    # TODO: 对出界的部分进行pad
     return img[b.hmin : b.hmax, b.wmin : b.wmax, :]
 
 
