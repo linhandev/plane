@@ -41,13 +41,14 @@ class HumanClas:
 
 
 class PdxDet:
-    def __init__(self, model_path, bs=2, thresh=0.95):
+    def __init__(self, model_path, bs=4, thresh=0.9, autoflush=True):
         self.model = pdx.load_model(model_path)
         self.transform = dT.Compose([dT.Resize(), dT.Normalize()])
         self.bs = bs
         self.thresh = thresh
         self.imgs = []
         self.infos = []
+        self.autoflush = autoflush
 
     def predict(self, img):
         """推理一张图片.
@@ -92,6 +93,7 @@ class PdxDet:
                 if bb["score"] > self.thresh:
                     # TODO: 对一个图片中的多个结果按照左下角位置进行排序
                     res[-1].append(BB(bb["bbox"], type="pdx"))
+                res[-1].sort(key=lambda bb: (bb.wmin, bb.hmin))
         return res
 
     def add(self, img, info):
@@ -115,8 +117,7 @@ class PdxDet:
         """
         self.imgs.append(img)
         self.infos.append(info)
-        # print("++++", len(self.imgs), self.infos)
-        if len(self.imgs) == self.bs:
+        if self.autoflush and len(self.imgs) == self.bs:
             return self.flush()
         else:
             return [], [], []

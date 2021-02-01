@@ -1,10 +1,12 @@
 from math import hypot
+from xml.dom import minidom
 
 import cv2
+import numpy as np
 
 
 class Stream:
-    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=5, start_frame=0):
+    def __init__(self, vid_path, toi_path=None, toi_only=False, itv_sparse=25, itv_dense=5, start_frame=None):
         """创建视频流.
 
         Parameters
@@ -13,12 +15,14 @@ class Stream:
             视频流地址，cv2.VideoCapture能接受的任何流都行.
         toi_path : str
             如果有视频感兴趣时间区域的文件，写路径.
+        toi_only : bool
+            只走toi部分，其他部分不走
         itv_sparse : int
             稀疏抽帧间隔，在toi外面按这个间隔抽帧.
         itv_dense : int
             密集抽帧间隔，在toi里边按照这个间隔抽帧.
         start_frame : int
-            从第几帧开始，基本是调试功能.
+            从第几帧开始，基本是调试功能，这个最后设置idx，会override toi_only.
 
         Returns
         -------
@@ -28,7 +32,7 @@ class Stream:
 
         # TODO: 处理异常,判断打开成功
         vid = cv2.VideoCapture(vid_path)
-        self.idx = start_frame
+        self.idx = 0
         self.sitv = itv_sparse
         self.ditv = itv_dense
         self.fstart = self.fend = 0
@@ -38,9 +42,6 @@ class Stream:
             vid.get(cv2.CAP_PROP_FRAME_WIDTH),
             vid.get(cv2.CAP_PROP_FRAME_HEIGHT),
         ]
-        self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
-        self.len = int(vid.get(cv2.CAP_PROP_FRAME_COUNT) / self.sitv) - 1
-
         if toi_path is not None:
             with open(toi_path, "r") as f:
                 time_str = f.read()
@@ -49,7 +50,16 @@ class Stream:
             self.fend = int(self.fend)
             self.fstart *= self.fps
             self.fend *= self.fps
-
+            if toi_only:
+                self.idx = self.fstart
+        if start_frame is not None:
+            self.idx = start_frame
+        if toi_only:
+            self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
+        else:
+            self.frame_count = self.fend - self.fstart
+        self.len = int(vid.get(cv2.CAP_PROP_FRAME_COUNT) / self.sitv) - 1
+        self.toi_only = toi_only
         self.vid = vid
 
     def __getitem__(self, idx):
@@ -96,7 +106,7 @@ class Stream:
             self.idx += self.sitv
         self.vid.set(1, self.idx)
         success, image = self.vid.read()
-        if not success:
+        if not success or (self.toi_only and self.idx > self.fend):
             raise StopIteration
         return self.idx, image
 
@@ -113,7 +123,7 @@ class BB:
     hmin = 0
     hmax = 0
 
-    def __init__(self, p, type="WH", size=[None, None]):
+    def __init__(self, p, type="WH", size=(None, None)):
         """创建一个bb.
 
         Parameters
@@ -124,11 +134,6 @@ class BB:
             不同的格式.
             pdx: w左上角,h左上角,w长度,h长度
         size : tuple
-
-        Returns
-        -------
-        type
-            Description of returned object.
 
         """
         p = [int(t) for t in p]
@@ -152,6 +157,35 @@ class BB:
 
         self.wc = (self.wmin + self.wmax) // 2
         self.hc = (self.hmin + self.hmax) // 2
+        self.list = [self.wmin, self.hmin, self.wmax, self.hmax]
+        # TODO: none
+        self.size = [int(t) for t in size]
+
+    def __pos__(self):
+        """在实例前加+的结果.
+
+        Returns
+        -------
+        BB
+            四个数都大于0的bb.
+
+        """
+        return BB(
+            [max(0, self.wmin), max(0, self.hmin), max(0, self.wmax), max(0, self.hmax)], size=self.size
+        )
+
+    def spill(self):
+        if self.wmin < 0 or self.hmin < 0:
+            return True
+        if self.size != (None, None) and (self.wmax > self.size[0] or self.hmax > self.size[1]):
+            return True
+        return False
+
+    def __getitem__(self, idx):
+        return self.list[idx]
+
+    def __iter__(self):
+        return self.list.__iter__()
 
     def __repr__(self):
         """打印支持.
@@ -162,11 +196,27 @@ class BB:
             Description of returned object.
 
         """
-        return "BB: WHC ({}, {}), ({}, {})".format(self.wmin, self.wmax, self.hmin, self.hmax)
+        return "BB: WHC ({}, {}), ({}, {}) Image size: {}".format(
+            self.wmin, self.wmax, self.hmin, self.hmax, self.size
+        )
 
-    def square(self, length, restrict=False):
+    def __gt__(self, size):
+        if (self.wmax - self.wmin) > size[0] or (self.hmax - self.hmin) > size[1]:
+            return True
+        return False
+
+    def __lt__(self, size):
+        if (self.wmax - self.wmin) < size[0] or (self.hmax - self.hmin) < size[1]:
+            return True
+        return False
+
+    def __neq__(self, size):
+        if (self.wmax - self.wmin) != size[0] or (self.hmax - self.hmin) != size[1]:
+            return True
+        return False
+
+    def square(self, length):
         """返回一个和self同中心，length边长的bb.
-        如果有宽度和高度，可以限制bb不出图片
 
         Parameters
         ----------
@@ -180,13 +230,9 @@ class BB:
 
         """
         l = length // 2
-        if restrict and self.width is not None and self.height is not None:
-            wl, hl = max(self.wc - l, 0), max(self.hc - l, 0)
-            wh, hh = min(self.wc + l, self.width), min(self.hc + l, self.height)
-        else:
-            wl, hl = self.wc - l, self.hc - l
-            wh, hh = self.wc + l, self.hc + l
-        return BB([wl, hl, wh, hh], "WH")
+        wl, hl = self.wc - l + 0.1, self.hc - l + 0.1
+        wh, hh = self.wc + l + 0.1, self.hc + l + 0.1
+        return BB([wl, hl, wh, hh], "WH", self.size)
 
     def region(self, ratio):
         """返回一个和self同中心，宽，长分别为ratio倍的bb.
@@ -207,7 +253,7 @@ class BB:
         r = ratio
         wl = int(wl * r[0] / 2)
         hl = int(hl * r[1] / 2)
-        return BB([self.wc - wl, self.hc - hl, self.wc + wl, self.hc + hl], "WH")
+        return BB([self.wc - wl, self.hc - hl, self.wc + wl, self.hc + hl], "WH", self.size)
 
     def center(self):
         return [self.wc, self.hc]
@@ -261,7 +307,24 @@ class BB:
         )
 
 
-def crop(img, b):
+def xml2bb(path, obj_type="person"):
+    tags = ["xmin", "ymin", "xmax", "ymax"]
+    xmldoc = minidom.parse(path)
+    objs = xmldoc.getElementsByTagName("object")
+    size = xmldoc.getElementsByTagName("size")[0]
+    width = size.getElementsByTagName("width")[0].firstChild.data
+    height = size.getElementsByTagName("height")[0].firstChild.data
+
+    bbs = []
+    for obj in objs:
+        type = obj.getElementsByTagName("name")[0].firstChild.data
+        if type == obj_type:
+            p = [float(obj.getElementsByTagName(t)[0].firstChild.data) for t in tags]
+            bbs.append(BB(p, "WH", (width, height)))
+    return bbs
+
+
+def crop(img, b, do_pad=False):
     """从图像中切下bb范围.
 
     Parameters
@@ -277,7 +340,15 @@ def crop(img, b):
         切下来的部分.
     """
     # TODO: 对出界的部分进行pad
-    return img[b.hmin : b.hmax, b.wmin : b.wmax, :]
+    b = +b
+    img = img[b.hmin : b.hmax, b.wmin : b.wmax, :]
+    if do_pad:
+        pad = np.array(list(b))
+        pad[:2] = -pad[:2]
+        pad[2:] = pad[2:] - np.array(img.shape[:2]) + 1
+        pad = np.maximum(pad, 0)
+        img = np.pad(img, [[pad[1], pad[3]], [pad[0], pad[2]], [0, 0]], "reflect")
+    return img
 
 
 def dpoint(img, p, color="R"):
