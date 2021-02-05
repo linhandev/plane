@@ -1,12 +1,16 @@
+import paddle
 from paddle.nn import Conv2D, BatchNorm2D, ReLU, Softmax, MaxPool2D, Flatten, Linear
 import paddlex as pdx
 from paddlex.det import transforms as dT
+from paddle.static import InputSpec
+import numpy as np
+
 
 from .util import BB
 
 
 class HumanClas:
-    def __init__(self):
+    def __init__(self, mode="train"):
         ClasModel = paddle.nn.Sequential(
             Conv2D(3, 6, (3, 3)),
             BatchNorm2D(6),
@@ -37,7 +41,33 @@ class HumanClas:
             Linear(32, 2),
             Softmax(),
         )
-        self.model = paddle.Model(ClasModel)
+        input = InputSpec([None, 3, 64, 64], "float32", "x")
+        label = InputSpec([None, 1], "int64", "label")
+        model = paddle.Model(ClasModel, inputs=input, labels=label)
+        model.prepare(
+            paddle.optimizer.Adam(parameters=ClasModel.parameters()),
+            paddle.nn.CrossEntropyLoss(),
+            paddle.metric.Accuracy(),
+        )
+        self.model = model
+
+        if mode == "predict":
+            self.load_weight()
+
+    def load_weight(self, path="../model/best/person_clas/person_clas"):
+        self.model.load(path)
+
+    def predict(self, img, batch_size=None):
+        print(img.shape)
+        img = img.astype("float32")
+        img = np.swapaxes(img, 0, 1)
+        img = np.swapaxes(img, 0, 2)
+        img = img[np.newaxis, :, :, :]
+        img = [img]
+        res = self.model.predict(img)
+        print(res)
+        res = res[0][0][0][0] < 0.8
+        return res
 
 
 class PdxDet:
@@ -91,7 +121,6 @@ class PdxDet:
             res.append([])
             for bb in bbs:
                 if bb["score"] > self.thresh:
-                    # TODO: 对一个图片中的多个结果按照左下角位置进行排序
                     res[-1].append(BB(bb["bbox"], type="pdx"))
                 res[-1].sort(key=lambda bb: (bb.wmin, bb.hmin))
         return res
@@ -139,3 +168,6 @@ class PdxDet:
         infos = self.infos.copy()
         self.infos = []
         return imgs, infos, res
+
+    def __len__(self):
+        return len(self.imgs)

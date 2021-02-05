@@ -99,7 +99,7 @@ class Stream:
 
         """
         # TODO: 添加vidcapture支持
-        if self.fstart <= self.idx <= self.fend:
+        if self.fstart <= self.idx < self.fend:
             self.idx += self.ditv
             print("In toi, curr idx: {}".format(self.idx))
         else:
@@ -112,6 +112,7 @@ class Stream:
 
 
 class BB:
+    # TODO: 用getter setter实现 wr，hr，返回一个slice
     """
     x是宽,y是高
     cv2里numpy下标是 HWC
@@ -158,8 +159,10 @@ class BB:
         self.wc = (self.wmin + self.wmax) // 2
         self.hc = (self.hmin + self.hmax) // 2
         self.list = [self.wmin, self.hmin, self.wmax, self.hmax]
-        # TODO: none
-        self.size = [int(t) for t in size]
+        if size[0] is not None:
+            self.size = [int(t) for t in size]
+        else:
+            self.size = (None, None)
 
     def __pos__(self):
         """在实例前加+的结果.

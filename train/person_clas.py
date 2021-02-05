@@ -4,9 +4,15 @@ import os.path as osp
 import cv2
 import paddle
 import paddle.vision.transforms as vt
+from paddle.nn import Conv2D, BatchNorm2D, ReLU, Softmax, MaxPool2D, Flatten, Linear
+from PIL import Image
+import matplotlib.pyplot as plt
+import numpy as np
+
 from util.model import HumanClas
 
-data_dir = "/home/aistudio/plane/bend/"
+paddle.disable_static()
+data_dir = "/home/aistudio/plane/弯腰分类-大"
 
 
 class HumanClasDataset(paddle.io.Dataset):
@@ -17,8 +23,8 @@ class HumanClasDataset(paddle.io.Dataset):
         ns = os.listdir(osp.join(self.data_path, "n"))
         ps.sort()
         ns.sort()
-        ps = [osp.join("p", n) for n in ps]
-        ns = [osp.join("n", n) for n in ns]
+        ps = [osp.join("p", x) for x in ps]
+        ns = [osp.join("n", x) for x in ns]
         data = []
         if mode == "train":
             for idx in range(int(len(ps) * 0.8)):
@@ -31,10 +37,20 @@ class HumanClasDataset(paddle.io.Dataset):
             for idx in range(int(len(ns) * 0.8), len(ns)):
                 data.append([ns[idx], 0])
         self.data = data
-        self.transform = vt.Compose([vt.ToTensor()])  # TODO: 增加更多的数据增强
+        self.transform = vt.Compose(
+            [
+                # vt.ColorJitter(0.1, 0.1, 0.1, 0.1),
+                # # vt.RandomRotation(10),
+                # vt.RandomHorizontalFlip(),
+                # vt.ColorJitter(),
+                vt.Resize(64),
+                vt.ToTensor(),
+            ]
+        )  # TODO: 研究合适的数据增强策略
 
     def __getitem__(self, index):
-        data = cv2.imread(osp.join(self.data_path, self.data[index][0]))
+        # data = cv2.imread(osp.join(self.data_path, self.data[index][0]))
+        data = Image.open(osp.join(self.data_path, self.data[index][0]))
         data = self.transform(data)
         label = self.data[index][1]
         return data, label
@@ -46,14 +62,20 @@ class HumanClasDataset(paddle.io.Dataset):
 train_dataset = HumanClasDataset(mode="train")
 eval_dataset = HumanClasDataset(mode="eval")
 
-clas = HumanClas()
-model = clas.model
-model.prepare(
-    paddle.optimizer.Adam(parameters=ClasModel.parameters()),
-    paddle.nn.CrossEntropyLoss(),
-    paddle.metric.Accuracy(),
+
+model = HumanClas().model
+model.fit(
+    train_dataset,
+    eval_dataset,
+    batch_size=64,
+    epochs=100,
+    eval_freq=10,
+    save_dir="../model/ckpt/person_clas",
+    save_freq=10,
+    shuffle=True,
+    # num_workers=8,
+    verbose=1,
 )
-model.fit(train_dataset, batch_size=32, epochs=100, verbose=2)
 model.save("../model/best/person_clas/person_clas", training=True)
 
 model.evaluate(eval_dataset, verbose=1)
