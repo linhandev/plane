@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import random
 
 import cv2
 import paddle
@@ -25,6 +26,7 @@ class HumanClasDataset(paddle.io.Dataset):
         ns.sort()
         ps = [osp.join("p", x) for x in ps]
         ns = [osp.join("n", x) for x in ns]
+        ns = random.sample(ns, len(ps))
         data = []
         if mode == "train":
             for idx in range(int(len(ps) * 0.8)):
@@ -39,10 +41,9 @@ class HumanClasDataset(paddle.io.Dataset):
         self.data = data
         self.transform = vt.Compose(
             [
-                # vt.ColorJitter(0.1, 0.1, 0.1, 0.1),
+                vt.ColorJitter(0.1, 0.1, 0.1, 0.1),
                 # # vt.RandomRotation(10),
-                # vt.RandomHorizontalFlip(),
-                # vt.ColorJitter(),
+                vt.RandomHorizontalFlip(),
                 vt.Resize(64),
                 vt.ToTensor(),
             ]

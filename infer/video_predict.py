@@ -26,15 +26,20 @@ args = parser.parse_args()
 
 def main():
     # 1. 定义模型对象
-    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=4)
-    person_det = PdxDet(model_path="../model/best/person_det", bs=4, autoflush=False)
+    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=2)
+    person_det = PdxDet(model_path="../model/best/person_det_yolov3", bs=2, autoflush=False)
     person_clas = HumanClas(mode="predict")
 
     for vid_name in os.listdir(args.input):
         print(vid_name)
         os.mkdir(osp.join(args.output, vid_name))
 
-        video = Stream(osp.join(args.input, vid_name), osp.join(args.time, vid_name.split(".")[0] + ".txt"))
+        video = Stream(
+            osp.join(args.input, vid_name),
+            osp.join(args.time, vid_name.split(".")[0] + ".txt"),
+            itv_sparse=100,
+            itv_dense=3,
+        )
         # TODO: 研究tqdm需要什么方法显示总数
         for fidx, img in video:
             # 检测出一个batch的起落架
@@ -43,9 +48,10 @@ def main():
                 if len(flgs) != 0:
                     flg = flgs[0]
                     person_det.add(crop(frame, flg.square(256)), [flg, frame_idx, frame])  # 添加到检测人的任务list中
-            # print("Gears detected: ", flgs_batch)
+            print("Gears detected: ", flgs_batch)
             if len(person_det.imgs) >= person_det.bs:
                 r = person_det.flush()  # 进行人像检测
+                print("People detected: ", r[2])
                 for gear_square, info, people in zip(r[0], r[1], r[2]):  # 对一个batch中的每一张，每一张可能有多个人
                     flg = info[0]
                     fid = info[1]
@@ -54,12 +60,13 @@ def main():
                     for pid, person in enumerate(people):
                         patch = crop(f, flg.square(256).transpose(person).square(64))
                         res = person_clas.predict(patch)
-                        dbb(f, flg.square(256).transpose(person), "G" if res else "R")
+                        # dbb(f, flg.square(256).transpose(person).region([1.2, 1.2]), "G" if res else "R")
+                        dpoint(f, flg.square(256).transpose(person).center(), "G" if res else "R")
 
                     # dbb(f, flg, "B")
-                    dpoint(f, flg.center(), "R")
+                    dpoint(f, flg.center(), "B")
                     dbb(f, flg.square(256), "B")
-                    cv2.imshow("img", f)
+                    cv2.imshow("img", crop(f, flg.square(300)))
                     cv2.waitKey()
 
                     # cv2.imwrite(osp.join(args.output, vid_name, str(fid) + ".png"), f)

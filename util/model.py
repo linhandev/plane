@@ -42,7 +42,7 @@ class HumanClas:
             Softmax(),
         )
         input = InputSpec([None, 3, 64, 64], "float32", "x")
-        label = InputSpec([None, 1], "int64", "label")
+        label = InputSpec([None, 1], "int32", "label")
         model = paddle.Model(ClasModel, inputs=input, labels=label)
         model.prepare(
             paddle.optimizer.Adam(parameters=ClasModel.parameters()),
