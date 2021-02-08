@@ -67,9 +67,13 @@ def main():
                     dpoint(f, flg.center(), "B")
                     dbb(f, flg.square(256), "B")
                     cv2.imshow("img", crop(f, flg.square(300)))
-                    cv2.waitKey()
+                    # cv2.waitKey()
 
-                    # cv2.imwrite(osp.join(args.output, vid_name, str(fid) + ".png"), f)
+                    cv2.imwrite(
+                        osp.join(args.output, vid_name, str(fid).zfill(6) + ".png"),
+                        crop(f, flg.square(300)),
+                    )
+        shuilt.move(osp.join(args.output, vid_name), osp.join(args.output, "finish"))
 
 
 if __name__ == "__main__":
