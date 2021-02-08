@@ -26,8 +26,8 @@ args = parser.parse_args()
 
 def main():
     # 1. 定义模型对象
-    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=2)
-    person_det = PdxDet(model_path="../model/best/person_det_yolov3", bs=2, autoflush=False)
+    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=8)
+    person_det = PdxDet(model_path="../model/best/person_det_yolov3", bs=8, autoflush=False)
     person_clas = HumanClas(mode="predict")
 
     for vid_name in os.listdir(args.input):
