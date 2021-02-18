@@ -37,7 +37,6 @@ class Stream:
         self.idx = 0
         self.sitv = itv_sparse
         self.ditv = itv_dense
-        self.toi = []
         self.type = None
         self.fps = int(vid.get(cv2.CAP_PROP_FPS))
         self.size = [
@@ -55,6 +54,8 @@ class Stream:
             info.insert(0, 0)
             self.toi = [x * self.fps for x in info]
             self.toi.append(self.frame_count)
+        else:
+            self.toi = [0, self.frame_count]
         if start_frame is not None:
             self.idx = start_frame
 
@@ -104,9 +105,11 @@ class Stream:
         bool, int
             bool是当前在不在toi里，int是这个区间(不一定在不在toi里)结束的时间.
         """
+        # print(self.idx, self.frame_count)
         for idx in range(len(self.toi) - 1):
             if self.toi[idx] <= self.idx < self.toi[idx + 1]:
                 return not (idx % 2 == 0), self.toi[idx + 1]
+
         raise Exception("toi不应该判断最后一帧")
 
     def __next__(self):
@@ -117,6 +120,9 @@ class Stream:
         tuple
             当前帧的id和帧图片.
         """
+        # BUG: 有的视频会在学列最后出现最后一帧
+        if self.idx >= self.frame_count:
+            raise StopIteration
         is_in, next_idx = self.in_toi()
         if is_in:
             if self.ditv != 0:
@@ -129,8 +135,6 @@ class Stream:
                 self.idx += self.sitv
             else:
                 self.idx = next_idx
-        if self.idx == self.frame_count:
-            raise StopIteration
         success, img = self[self.idx]
         if not success:
             raise StopIteration
@@ -368,16 +372,23 @@ def crop(img, b, do_pad=False):
     type
         切下来的部分.
     """
-    # TODO: 对出界的部分进行pad
-    b = +b
-    img = img[b.hmin : b.hmax, b.wmin : b.wmax, :]
+    pad = [0, 0, 0, 0]
+    b = list(b)
+    # TODO: 测试pad的代码对不对
+    for idx in range(2):
+        if b[idx] < 0:
+            pad[idx] = -b[idx]
+            b[idx] = 0
+
+    shape = img.shape[1::-1]
+    for idx in range(2, 4):
+        if b[idx] > shape[idx - 2]:
+            pad[idx] = b[idx] - shape[idx - 2]
+            b[idx] = shape[idx - 2]
+    ret = img[b[1] : b[3], b[0] : b[2], :]
     if do_pad:
-        pad = np.array(list(b))
-        pad[:2] = -pad[:2]
-        pad[2:] = pad[2:] - np.array(img.shape[:2]) + 1
-        pad = np.maximum(pad, 0)
-        img = np.pad(img, [[pad[1], pad[3]], [pad[0], pad[2]], [0, 0]], "reflect")
-    return img
+        ret = np.pad(ret, [[pad[1], pad[3]], [pad[0], pad[2]], [0, 0]], "reflect")
+    return ret
 
 
 def dpoint(img, p, color="R"):
