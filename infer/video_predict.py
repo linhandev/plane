@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 import argparse
+import shutil
 
 import cv2
 from tqdm import tqdm
@@ -26,8 +27,8 @@ args = parser.parse_args()
 
 def main():
     # 1. 定义模型对象
-    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=8)
-    person_det = PdxDet(model_path="../model/best/person_det_yolov3", bs=8, autoflush=False)
+    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=2)
+    person_det = PdxDet(model_path="../model/best/person_det_yolov3", bs=2, autoflush=False)
     person_clas = HumanClas(mode="predict")
 
     for vid_name in os.listdir(args.input):
@@ -66,14 +67,14 @@ def main():
                     # dbb(f, flg, "B")
                     dpoint(f, flg.center(), "B")
                     dbb(f, flg.square(256), "B")
-                    cv2.imshow("img", crop(f, flg.square(300)))
-                    # cv2.waitKey()
+                    cv2.imshow("img", f)
+                    cv2.waitKey()
 
-                    cv2.imwrite(
-                        osp.join(args.output, vid_name, str(fid).zfill(6) + ".png"),
-                        crop(f, flg.square(300)),
-                    )
-        shuilt.move(osp.join(args.output, vid_name), osp.join(args.output, "finish"))
+                    # cv2.imwrite(
+                    #     osp.join(args.output, vid_name, str(fid).zfill(6) + ".png"),
+                    #     crop(f, flg.square(300)),
+                    # )
+        # shutil.move(osp.join(args.output, vid_name), osp.join(args.output, "finish"))
 
 
 if __name__ == "__main__":

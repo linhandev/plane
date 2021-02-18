@@ -5,8 +5,12 @@ import cv2
 import numpy as np
 
 
+def toint(l):
+    return [int(x) for x in l]
+
+
 class Stream:
-    def __init__(self, vid_path, toi_path=None, toi_only=False, itv_sparse=25, itv_dense=5, start_frame=None):
+    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=5, start_frame=None):
         """创建视频流.
 
         Parameters
@@ -15,14 +19,12 @@ class Stream:
             视频流地址，cv2.VideoCapture能接受的任何流都行.
         toi_path : str
             如果有视频感兴趣时间区域的文件，写路径.
-        toi_only : bool
-            只走toi部分，其他部分不走
         itv_sparse : int
-            稀疏抽帧间隔，在toi外面按这个间隔抽帧.
+            稀疏抽帧间隔，在toi外面按这个间隔抽帧；如果为0则略过所有toi外的帧.
         itv_dense : int
-            密集抽帧间隔，在toi里边按照这个间隔抽帧.
+            密集抽帧间隔，在toi里边按照这个间隔抽帧；如果为0略过所有toi内的帧.
         start_frame : int
-            从第几帧开始，基本是调试功能，这个最后设置idx，会override toi_only.
+            从第几帧开始，调试功能，这个最后设置idx，会override toi_only.
 
         Returns
         -------
@@ -35,59 +37,77 @@ class Stream:
         self.idx = 0
         self.sitv = itv_sparse
         self.ditv = itv_dense
-        self.fstart = self.fend = 0
+        self.toi = []
         self.type = None
-        self.fps = vid.get(cv2.CAP_PROP_FPS)
+        self.fps = int(vid.get(cv2.CAP_PROP_FPS))
         self.size = [
             vid.get(cv2.CAP_PROP_FRAME_WIDTH),
             vid.get(cv2.CAP_PROP_FRAME_HEIGHT),
         ]
+        self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
+        # 获取 toi
         if toi_path is not None:
             with open(toi_path, "r") as f:
                 time_str = f.read()
-            self.fstart, self.fend, self.type = time_str.split(" ")
-            self.fstart = int(self.fstart)
-            self.fend = int(self.fend)
-            self.fstart *= self.fps
-            self.fend *= self.fps
-            if toi_only:
-                self.idx = self.fstart
+            info = time_str.split(" ")
+            self.type = info.pop()
+            info = toint(info)
+            info.insert(0, 0)
+            self.toi = [x * self.fps for x in info]
+            self.toi.append(self.frame_count)
         if start_frame is not None:
             self.idx = start_frame
-        if toi_only:
-            self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
-        else:
-            self.frame_count = self.fend - self.fstart
-        self.len = int(vid.get(cv2.CAP_PROP_FRAME_COUNT) / self.sitv) - 1
-        self.toi_only = toi_only
+
+        # TODO: 更精准的计算len
+        self.len = 0
+        if self.sitv != 0:
+            for idx in range(0, len(self.toi), 2):
+                self.len += (self.toi[idx + 1] - self.toi[idx]) / self.sitv
+        if self.ditv != 0:
+            for idx in range(1, len(self.toi) - 1, 2):
+                self.len += (self.toi[idx + 1] - self.toi[idx]) / self.ditv
+        self.len = int(self.len)
         self.vid = vid
 
     def __getitem__(self, idx):
         """使其支持[].
-        按照稀疏间隔取帧
+        按照frame取帧
 
         Parameters
         ----------
         idx : int
-            要第几个sitv的数据.
+            要第几帧的数据.
 
         Returns
         -------
-        type
-            返回 idx × sitv 帧的数据.
+        bool, np.ndarray
+            是否获取成功，第 idx 帧的数据.
 
         """
-        # TODO: 研究为什么只能到 -2itv
-        idx = min(self.frame_count - self.itv * 2, idx * self.itv)
+        # if idx >= self.frame_count:
+        #     raise KeyError("Index {} exceed frame count".format(idx))
+        idx = min(self.frame_count - 1, idx)
         self.vid.set(1, idx)
-        success, image = self.vid.read()
-        return image
+        return self.vid.read()
 
     def __len__(self):
         return self.len
 
     def __iter__(self):
         return self
+
+    def in_toi(self):
+        """判断当前帧是否在toi里.
+
+        Returns
+        -------
+        bool, int
+            bool是当前在不在toi里，int是这个区间(不一定在不在toi里)结束的时间.
+        """
+        for idx in range(len(self.toi) - 1):
+            if self.toi[idx] <= self.idx < self.toi[idx + 1]:
+                return not (idx % 2 == 0), self.toi[idx + 1]
+        raise Exception("toi不应该判断最后一帧")
 
     def __next__(self):
         """迭代支持.
@@ -96,19 +116,25 @@ class Stream:
         -------
         tuple
             当前帧的id和帧图片.
-
         """
-        # TODO: 添加vidcapture支持
-        if self.fstart <= self.idx < self.fend:
-            self.idx += self.ditv
-            print("In toi, curr idx: {}".format(self.idx))
+        is_in, next_idx = self.in_toi()
+        if is_in:
+            if self.ditv != 0:
+                self.idx += self.ditv
+                # print("In toi, curr idx: {}".format(self.idx))
+            else:
+                self.idx = next_idx
         else:
-            self.idx += self.sitv
-        self.vid.set(1, self.idx)
-        success, image = self.vid.read()
-        if not success or (self.toi_only and self.idx > self.fend):
+            if self.sitv != 0:
+                self.idx += self.sitv
+            else:
+                self.idx = next_idx
+        if self.idx == self.frame_count:
             raise StopIteration
-        return self.idx, image
+        success, img = self[self.idx]
+        if not success:
+            raise StopIteration
+        return self.idx, img
 
 
 class BB:
