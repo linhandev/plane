@@ -204,7 +204,8 @@ class BB:
 
         """
         return BB(
-            [max(0, self.wmin), max(0, self.hmin), max(0, self.wmax), max(0, self.hmax)], size=self.size
+            [max(0, self.wmin), max(0, self.hmin), max(0, self.wmax), max(0, self.hmax)],
+            size=self.size,
         )
 
     def spill(self):
@@ -441,7 +442,7 @@ def dbb(img, b, color="R"):
         color = (255, 0, 0)
 
     for l in lines:
-        cv2.line(img, l[0], l[1], color, 2)
+        cv2.line(img, l[0], l[1], color, 1)
 
 
 def dpn(img, res):
