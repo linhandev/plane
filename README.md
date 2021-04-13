@@ -55,3 +55,16 @@ TODO：给这个问题pr
 注意：
 所有数字要补0,否则排序很费劲
 一个文件名不要用两个同样的分隔符
+
+
+
+sudo docker run -d -it -p 6666:8080 -v /home/hanlin/label-studio/docker-data/:/label-studio/data heartexlabs/label-studio:latest
+
+docker exec -it c460 /bin/bash
+echo "TASKS_MAX_FILE_SIZE = 9999999999999999" >> /label_studio/core/settings/label_studio.py
+docker logs -f
+
+docker system prune -a # 删除所有本地存的image
+
+systemctl --user start ml
+journalctl --user  -f -u  ml

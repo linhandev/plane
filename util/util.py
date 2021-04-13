@@ -34,17 +34,23 @@ class Stream:
 
         # TODO: 处理异常,判断打开成功
         vid = cv2.VideoCapture(vid_path)
-        self.idx = 0
+        if start_frame is not None:
+            self.idx = start_frame
+        else:
+            self.idx = 0
         self.sitv = itv_sparse
         self.ditv = itv_dense
         self.type = None
         self.fps = int(vid.get(cv2.CAP_PROP_FPS))
-        self.size = [
-            vid.get(cv2.CAP_PROP_FRAME_WIDTH),
+        self.shape = [  # HWC
             vid.get(cv2.CAP_PROP_FRAME_HEIGHT),
+            vid.get(cv2.CAP_PROP_FRAME_WIDTH),
+            3,
         ]
+        self.shape = toint(self.shape)
         self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
         # 获取 toi
+        # TODO: 修改成读取json格式
         if toi_path is not None:
             with open(toi_path, "r") as f:
                 time_str = f.read()
@@ -56,8 +62,6 @@ class Stream:
             self.toi.append(self.frame_count)
         else:
             self.toi = [0, self.frame_count]
-        if start_frame is not None:
-            self.idx = start_frame
 
         # TODO: 更精准的计算len
         self.len = 0
@@ -120,7 +124,8 @@ class Stream:
         tuple
             当前帧的id和帧图片.
         """
-        # BUG: 有的视频会在学列最后出现最后一帧
+        curr_idx = self.idx
+        # BUG: 有的视频会在序列最后出现最后一帧
         if self.idx >= self.frame_count:
             raise StopIteration
         is_in, next_idx = self.in_toi()
@@ -135,10 +140,10 @@ class Stream:
                 self.idx += self.sitv
             else:
                 self.idx = next_idx
-        success, img = self[self.idx]
+        success, img = self[curr_idx]
         if not success:
             raise StopIteration
-        return self.idx, img
+        return curr_idx, img
 
 
 class BB:
