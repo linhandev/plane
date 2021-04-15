@@ -15,11 +15,11 @@ parser.add_argument(
     "-i",
     "--input",
     type=str,
-    default="/home/aistudio/plane/视频划分/train",
+    default="H:/W_S/Graduation_Project/plane/train-video",
     help="视频存放路径",
 )
-parser.add_argument("-o", "--output", type=str, default="/home/aistudio/plane/temp", help="结果帧存放路径")
-parser.add_argument("-t", "--time", type=str, default="/home/aistudio/plane/时间标注/all", help="上撤轮挡时间标注")
+parser.add_argument("-o", "--output", type=str, default="H:/W_S/Graduation_Project/plane/temp", help="结果帧存放路径")
+parser.add_argument("-t", "--time", type=str, default="H:/W_S/Graduation_Project/plane/时间", help="上撤轮挡时间标注")
 parser.add_argument("--itv", type=int, default=25, help="抽帧间隔")
 parser.add_argument("--bs", type=int, default=2, help="推理bs")
 args = parser.parse_args()
@@ -33,11 +33,11 @@ def main():
 
     for vid_name in os.listdir(args.input):
         # print(vid_name)
-        os.mkdir(osp.join(args.output, vid_name))
+        #os.mkdir(osp.join(args.output, vid_name))
 
         video = Stream(
             osp.join(args.input, vid_name),
-            osp.join(args.time, vid_name.split(".")[0] + ".txt"),
+            osp.join(args.time, os.listdir(args.time)[0]),
             itv_sparse=3,
             itv_dense=3,
         )
@@ -45,7 +45,7 @@ def main():
         history = [False for _ in range(mem_len)]
         thresh = 0.5
         # TODO: 研究tqdm需要什么方法显示总数
-        res_f = open(osp.join("/home/aistudio/plane/帧推理结果", vid_name.rstrip(".mp4") + ".txt"), "w")
+        #res_f = open(osp.join("H:/W_S/Graduation_Project/plane/time-out", vid_name.rstrip(".mp4") + ".txt"), "w")
         for fidx, img in video:
             # 检测出一个batch的起落架
             frames, fidxs, flgs_batch = flg_det.add(img, fidx)
@@ -68,7 +68,7 @@ def main():
                         res = person_clas.predict(patch)
                         if res:
                             has_positive = True
-                        dbb(f, flg.square(256).transpose(person).region([1.8, 1.8]), "G" if res else "R")
+                        # dbb(f, flg.square(256).transpose(person).region([1.8, 1.8]), "G" if res else "R")
                         dpoint(f, flg.square(256).transpose(person).center(), "G" if res else "R")
 
                     for idx in range(mem_len - 1, 0, -1):
@@ -77,19 +77,19 @@ def main():
                     prediction = "Positive" if np.sum(history) > mem_len * thresh else "Negative"
                     print(has_positive)
                     print(history, np.sum(history), prediction)
-                    print(fid, has_positive, prediction, np.sum(history), file=res_f)
-                    res_f.flush()
+                    #print(fid, has_positive, prediction, np.sum(history), file=res_f)
+                    #res_f.flush()
                     dbb(f, flg, "B")
                     dpoint(f, flg.center(), "B")
                     dbb(f, flg.square(256), "B")
-                    # cv2.imshow("img", f)
-                    # cv2.waitKey()
+                    cv2.imshow("img", f)
+                    cv2.waitKey()
 
-                    cv2.imwrite(
-                        osp.join(args.output, vid_name, str(fid).zfill(6) + ".png"),
-                        crop(f, flg.square(300)),
-                    )
-        res_f.close()
+                    # cv2.imwrite(
+                    #     osp.join(args.output, vid_name, str(fid).zfill(6) + ".png"),
+                    #     crop(f, flg.square(300)),
+                    # )
+        #res_f.close()
         shutil.move(osp.join(args.output, vid_name), osp.join(args.output, "finish"))
 
 

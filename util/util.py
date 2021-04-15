@@ -3,6 +3,7 @@ from xml.dom import minidom
 
 import cv2
 import numpy as np
+import pandas as pd
 
 
 def toint(l):
@@ -10,7 +11,7 @@ def toint(l):
 
 
 class Stream:
-    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=5, start_frame=None):
+    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=25, start_frame=None):
         """创建视频流.
 
         Parameters
@@ -49,17 +50,22 @@ class Stream:
         ]
         self.shape = toint(self.shape)
         self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
+        # if vid_path.find("/") == -1:
+        vid_name = vid_path.split("\\")[-1]
+        # else:
+        #     vid_name = vid_path.split("/")[-1]
         # 获取 toi
         # TODO: 修改成读取json格式
         if toi_path is not None:
-            with open(toi_path, "r") as f:
-                time_str = f.read()
-            info = time_str.split(" ")
-            self.type = info.pop()
-            info = toint(info)
-            info.insert(0, 0)
-            self.toi = [x * self.fps for x in info]
-            self.toi.append(self.frame_count)
+            time_mark = pd.read_csv(toi_path)
+            if vid_name in time_mark['name'].values:
+                df = time_mark[time_mark['name'].isin(vid_name.split())].iloc[:, 1:]
+                info = df.values.tolist()[0]
+                info.insert(0, 0)
+                self.toi = [x * self.fps for x in info]
+                self.toi.append(self.frame_count)
+            else:
+                self.toi = [0, self.frame_count]
         else:
             self.toi = [0, self.frame_count]
 
@@ -391,7 +397,7 @@ def crop(img, b, do_pad=False):
         if b[idx] > shape[idx - 2]:
             pad[idx] = b[idx] - shape[idx - 2]
             b[idx] = shape[idx - 2]
-    ret = img[b[1] : b[3], b[0] : b[2], :]
+    ret = img[b[1]: b[3], b[0]: b[2], :]
     if do_pad:
         ret = np.pad(ret, [[pad[1], pad[3]], [pad[0], pad[2]], [0, 0]], "reflect")
     return ret
