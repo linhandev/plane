@@ -15,11 +15,11 @@ parser.add_argument(
     "-i",
     "--input",
     type=str,
-    default="H:/W_S/Graduation_Project/plane/train-video",
+    default="../train-video",
     help="视频存放路径",
 )
-parser.add_argument("-o", "--output", type=str, default="H:/W_S/Graduation_Project/plane/temp", help="结果帧存放路径")
-parser.add_argument("-t", "--time", type=str, default="H:/W_S/Graduation_Project/plane/时间", help="上撤轮挡时间标注")
+parser.add_argument("-o", "--output", type=str, default="../temp", help="结果帧存放路径")
+parser.add_argument("-t", "--time", type=str, default="../util", help="上撤轮挡时间标注")
 parser.add_argument("--itv", type=int, default=25, help="抽帧间隔")
 parser.add_argument("--bs", type=int, default=2, help="推理bs")
 args = parser.parse_args()
@@ -37,7 +37,7 @@ def main():
 
         video = Stream(
             osp.join(args.input, vid_name),
-            osp.join(args.time, os.listdir(args.time)[0]),
+            osp.join(args.time, "time_mark.CSV"),
             itv_sparse=3,
             itv_dense=3,
         )
