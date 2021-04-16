@@ -60,7 +60,7 @@ TODO：给这个问题pr
 
 sudo docker run -d -it -p 6666:8080 -v /home/hanlin/label-studio/docker-data/:/label-studio/data heartexlabs/label-studio:latest
 
-docker exec -it c460 /bin/bash
+了docker exec -it c460 /bin/bash
 echo "TASKS_MAX_FILE_SIZE = 9999999999999999" >> /label_studio/core/settings/label_studio.py
 docker logs -f
 

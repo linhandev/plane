@@ -4,6 +4,7 @@
 *.zip
 model/
 output/
+annotation/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

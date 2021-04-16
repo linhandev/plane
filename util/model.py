@@ -71,7 +71,7 @@ class HumanClas:
 
 
 class PdxDet:
-    def __init__(self, model_path, bs=4, thresh=0.9, autoflush=True):
+    def __init__(self, model_path, bs=4, thresh=0.9, autoflush=True, ann_path="./annotation/flg"):
         self.model = pdx.load_model(model_path)
         self.transform = dT.Compose([dT.Resize(), dT.Normalize()])
         self.bs = bs
@@ -79,8 +79,11 @@ class PdxDet:
         self.imgs = []
         self.infos = []
         self.autoflush = autoflush
+        self.ann_path = ann_path
+        if not osp.exists(ann_path):
+            os.mkdir(ann_path)
 
-    def predict(self, img):
+    def predict(self, img, name=None):
         """推理一张图片.
 
         Parameters
