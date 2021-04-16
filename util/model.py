@@ -80,10 +80,10 @@ class PdxDet:
         self.infos = []
         self.autoflush = autoflush
         self.ann_path = ann_path
-        if not osp.exists(ann_path):
-            os.mkdir(ann_path)
+        # if not osp.exists(ann_path):
+        #     os.mkdir(ann_path)
 
-    def predict(self, img, name=None):
+    def predict(self, img):
         """推理一张图片.
 
         Parameters

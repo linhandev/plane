@@ -58,8 +58,8 @@ class Stream:
         # TODO: 修改成读取json格式
         if toi_path is not None:
             time_mark = pd.read_csv(toi_path)
-            if vid_name in time_mark['name'].values:
-                df = time_mark[time_mark['name'].isin(vid_name.split())].iloc[:, 1:]
+            if vid_name in time_mark["name"].values:
+                df = time_mark[time_mark["name"].isin(vid_name.split())].iloc[:, 1:]
                 info = df.values.tolist()[0]
                 info.insert(0, 0)
                 self.toi = [x * self.fps for x in info]
@@ -397,7 +397,7 @@ def crop(img, b, do_pad=False):
         if b[idx] > shape[idx - 2]:
             pad[idx] = b[idx] - shape[idx - 2]
             b[idx] = shape[idx - 2]
-    ret = img[b[1]: b[3], b[0]: b[2], :]
+    ret = img[b[1] : b[3], b[0] : b[2], :]
     if do_pad:
         ret = np.pad(ret, [[pad[1], pad[3]], [pad[0], pad[2]], [0, 0]], "reflect")
     return ret
@@ -476,3 +476,35 @@ def dpn(img, res):
         img[:, :, 1] = 255
     else:
         img[:, :, 2] = 255
+
+
+def get_xml(pos, type="flg"):
+    res = f"""
+    <annotation>
+        <folder>image</folder>
+        <filename></filename>
+        <path></path>
+        <source>
+                <database></database>
+        </source>
+        <size>
+                <width>1920</width>
+                <height>1080</height>
+                <depth>3</depth>
+        </size>
+        <segmented>0</segmented>
+        <object>
+                <name>{type}</name>
+                <pose>Unspecified</pose>
+                <truncated>0</truncated>
+                <difficult>0</difficult>
+                <bndbox>
+                        <xmin>{pos[0]}</xmin>
+                        <ymin>{pos[1]}</ymin>
+                        <xmax>{pos[2]}</xmax>
+                        <ymax>{pos[3]}</ymax>
+                </bndbox>
+        </object>
+    </annotation>
+    """
+    return res
