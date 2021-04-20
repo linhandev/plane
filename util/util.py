@@ -11,9 +11,8 @@ def toint(l):
 
 
 class Stream:
-    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=25, start_frame=None):
+    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=3, start_frame=None):
         """创建视频流.
-
         Parameters
         ----------
         vid_path : str
@@ -26,7 +25,6 @@ class Stream:
             密集抽帧间隔，在toi里边按照这个间隔抽帧；如果为0略过所有toi内的帧.
         start_frame : int
             从第几帧开始，调试功能，这个最后设置idx，会override toi_only.
-
         Returns
         -------
         type
@@ -83,17 +81,14 @@ class Stream:
     def __getitem__(self, idx):
         """使其支持[].
         按照frame取帧
-
         Parameters
         ----------
         idx : int
             要第几帧的数据.
-
         Returns
         -------
         bool, np.ndarray
             是否获取成功，第 idx 帧的数据.
-
         """
         # if idx >= self.frame_count:
         #     raise KeyError("Index {} exceed frame count".format(idx))
@@ -109,7 +104,6 @@ class Stream:
 
     def in_toi(self):
         """判断当前帧是否在toi里.
-
         Returns
         -------
         bool, int
@@ -124,7 +118,6 @@ class Stream:
 
     def __next__(self):
         """迭代支持.
-
         Returnstype
         -------
         tuple
@@ -146,10 +139,10 @@ class Stream:
                 self.idx += self.sitv
             else:
                 self.idx = next_idx
-        success, img = self[curr_idx]
+        success, img = self[self.idx]
         if not success:
             raise StopIteration
-        return curr_idx, img
+        return curr_idx, img, is_in
 
 
 class BB:
@@ -167,7 +160,6 @@ class BB:
 
     def __init__(self, p, type="WH", size=(None, None)):
         """创建一个bb.
-
         Parameters
         ----------
         p : list
@@ -176,7 +168,6 @@ class BB:
             不同的格式.
             pdx: w左上角,h左上角,w长度,h长度
         size : tuple
-
         """
         p = [int(t) for t in p]
         if type == "pdx":
@@ -207,12 +198,10 @@ class BB:
 
     def __pos__(self):
         """在实例前加+的结果.
-
         Returns
         -------
         BB
             四个数都大于0的bb.
-
         """
         return BB(
             [max(0, self.wmin), max(0, self.hmin), max(0, self.wmax), max(0, self.hmax)],
@@ -234,12 +223,10 @@ class BB:
 
     def __repr__(self):
         """打印支持.
-
         Returns
         -------
         type
             Description of returned object.
-
         """
         return "BB: WHC ({}, {}), ({}, {}) Image size: {}".format(
             self.wmin, self.wmax, self.hmin, self.hmax, self.size
@@ -262,17 +249,14 @@ class BB:
 
     def square(self, length):
         """返回一个和self同中心，length边长的bb.
-
         Parameters
         ----------
         length : int
             目标正方形bb的边长.
-
         Returns
         -------
         BB
             和self同中心，length边长的bb.
-
         """
         l = length // 2
         wl, hl = self.wc - l + 0.1, self.hc - l + 0.1
@@ -281,17 +265,14 @@ class BB:
 
     def region(self, ratio):
         """返回一个和self同中心，宽，长分别为ratio倍的bb.
-
         Parameters
         ----------
         ratio : list/tuple
             目标bb宽和长分别为当前bb的多少倍.
-
         Returns
         -------
         BB
             和self同中心，宽，长分别为ratio倍的bb.
-
         """
         wl = self.wmax - self.wmin
         hl = self.hmax - self.hmin
@@ -305,17 +286,14 @@ class BB:
 
     def contains(self, obj):
         """当前bb是否包含一个点或者另一个bb中心.
-
         Parameters
         ----------
         obj : BB/list/tuple
             一个BB或者一个点.
-
         Returns
         -------
         Bool
             当前bb是否包含一个点或者另一个bb中心.
-
         """
         if isinstance(obj, BB):
             p = obj.center()
@@ -329,17 +307,14 @@ class BB:
         """在当前box里面做检测，将得到的结果bb转换为当前bb所在坐标系的坐标.
         比如当前bb是起落架周围256区域，在这里面检测到一个person_bb，则 self.transpose(person_bb) 得到这个人bb在整张图上的
         位置
-
         Parameters
         ----------
         bb : BB
             self内部的一个bb.
-
         Returns
         -------
         type
             变换成大坐标系bb的位置.
-
         """
         return BB(
             [
@@ -371,14 +346,12 @@ def xml2bb(path, obj_type="person"):
 
 def crop(img, b, do_pad=False):
     """从图像中切下bb范围.
-
     Parameters
     ----------
     img : np.ndarray
         HWC.
     b : BB
         Description of parameter `bb`.
-
     Returns
     -------
     type
@@ -405,7 +378,6 @@ def crop(img, b, do_pad=False):
 
 def dpoint(img, p, color="R"):
     """在img的p位置上画一个color颜色的点.
-
     Parameters
     ----------
     img : np.ndarray
@@ -414,7 +386,6 @@ def dpoint(img, p, color="R"):
         按照cv2格式，WH.
     color : str
         R,G,B.
-
     """
     if color == "R":
         color = (0, 0, 255)
@@ -427,7 +398,6 @@ def dpoint(img, p, color="R"):
 
 def dbb(img, b, color="R"):
     """在img上b范围画一个color颜色的bounding box.
-
     Parameters
     ----------
     img : np.ndarray
@@ -436,7 +406,6 @@ def dbb(img, b, color="R"):
         BB instance.
     color : str
         R,G,B.
-
     """
     xmin, ymin, xmax, ymax = b.wmin, b.hmin, b.wmax, b.hmax
     lines = [
@@ -458,14 +427,12 @@ def dbb(img, b, color="R"):
 
 def dpn(img, res):
     """在图像左上角画红/绿色块，表示分类结果.
-
     Parameters
     ----------
     img : np.ndarray
         需要标识的图像.
     res : Bool
         分类的结果.
-
     """
     if img.shape[0] <= 64:
         img = img[8:16, 8:16, :]
