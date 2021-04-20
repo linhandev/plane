@@ -1,5 +1,6 @@
 from math import hypot
 from xml.dom import minidom
+import os.path as osp
 
 import cv2
 import numpy as np
@@ -11,7 +12,9 @@ def toint(l):
 
 
 class Stream:
-    def __init__(self, vid_path, toi_path=None, itv_sparse=25, itv_dense=3, start_frame=None):
+    def __init__(
+        self, vid_path, toi_path="./util/toi.csv", itv_sparse=25, itv_dense=3, start_frame=None
+    ):
         """创建视频流.
         Parameters
         ----------
@@ -31,15 +34,18 @@ class Stream:
             一个可以下标索引，可以迭代的视频流对象.
         """
 
-        # TODO: 处理异常,判断打开成功
+        # TODO: 处理异常，判断打开成功
         vid = cv2.VideoCapture(vid_path)
         if start_frame is not None:
             self.idx = start_frame
+            self.next_idx = start_frame
         else:
             self.idx = 0
+            self.next_idx = 0
         self.sitv = itv_sparse
         self.ditv = itv_dense
-        self.type = None
+        self.type = None  # 上还是撤
+        self.toi = None
         self.fps = int(vid.get(cv2.CAP_PROP_FPS))
         self.shape = [  # HWC
             vid.get(cv2.CAP_PROP_FRAME_HEIGHT),
@@ -48,12 +54,11 @@ class Stream:
         ]
         self.shape = toint(self.shape)
         self.frame_count = vid.get(cv2.CAP_PROP_FRAME_COUNT)
-        # if vid_path.find("/") == -1:
+
         vid_name = vid_path.split("\\")[-1]
-        # else:
-        #     vid_name = vid_path.split("/")[-1]
+        vid_name = osp.basename(vid_path)
+
         # 获取 toi
-        # TODO: 修改成读取json格式
         if toi_path is not None:
             time_mark = pd.read_csv(toi_path)
             if vid_name in time_mark["name"].values:
@@ -62,9 +67,7 @@ class Stream:
                 info.insert(0, 0)
                 self.toi = [x * self.fps for x in info]
                 self.toi.append(self.frame_count)
-            else:
-                self.toi = [0, self.frame_count]
-        else:
+        if self.toi is None:
             self.toi = [0, self.frame_count]
 
         # TODO: 更精准的计算len
@@ -86,12 +89,13 @@ class Stream:
         idx : int
             要第几帧的数据.
         Returns
-        -------
+        -------cv2
         bool, np.ndarray
             是否获取成功，第 idx 帧的数据.
         """
         # if idx >= self.frame_count:
         #     raise KeyError("Index {} exceed frame count".format(idx))
+        # print(self.frame_count, idx)
         idx = min(self.frame_count - 1, idx)
         self.vid.set(1, idx)
         return self.vid.read()
@@ -107,42 +111,51 @@ class Stream:
         Returns
         -------
         bool, int
-            bool是当前在不在toi里，int是这个区间(不一定在不在toi里)结束的时间.
+            bool是当前在不在toi里，int是这个区间(不一定在不在toi里)结束的时间
         """
         # print(self.idx, self.frame_count)
         for idx in range(len(self.toi) - 1):
             if self.toi[idx] <= self.idx < self.toi[idx + 1]:
                 return not (idx % 2 == 0), self.toi[idx + 1]
-
-        raise Exception("toi不应该判断最后一帧")
+        return False, self.frame_count
+        # raise Exception("toi不应该判断最后一帧")
 
     def __next__(self):
         """迭代支持.
-        Returnstype
+        Returns
         -------
         tuple
             当前帧的id和帧图片.
         """
-        curr_idx = self.idx
+        # 1. 计算下一帧id
+        self.next_idx = self.idx
         # BUG: 有的视频会在序列最后出现最后一帧
+        print(self.frame_count, self.idx, self.next_idx)
         if self.idx >= self.frame_count:
             raise StopIteration
-        is_in, next_idx = self.in_toi()
+        is_in, interval_end = self.in_toi()
         if is_in:
             if self.ditv != 0:
-                self.idx += self.ditv
-                # print("In toi, curr idx: {}".format(self.idx))
+                self.next_idx += self.ditv
             else:
-                self.idx = next_idx
+                self.next_idx = interval_end
         else:
             if self.sitv != 0:
-                self.idx += self.sitv
+                self.next_idx += self.sitv
             else:
-                self.idx = next_idx
+                self.next_idx = interval_end
+        self.idx = self.next_idx
         success, img = self[self.idx]
         if not success:
             raise StopIteration
-        return curr_idx, img, is_in
+        return self.idx, img
+
+
+# vid = Stream("/home/2t/plane/视频划分/train/15251-上轮挡.mp4")
+# for idx, img in vid:
+#     print(idx)
+#     cv2.imshow("img", img)
+#     cv2.waitKey()
 
 
 class BB:
