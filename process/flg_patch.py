@@ -15,10 +15,10 @@ parser.add_argument(
     "-i",
     "--input",
     type=str,
-    default="../train-video111",
+    default="../train-video",
     help="视频存放路径",
 )
-parser.add_argument("-o", "--output", type=str, default="../temp111", help="结果帧存放路径")
+parser.add_argument("-o", "--output", type=str, default="../temp", help="结果帧存放路径")
 parser.add_argument("--itv", type=int, default=25, help="抽帧间隔")
 parser.add_argument("--bs", type=int, default=2, help="推理bs")
 args = parser.parse_args()
@@ -26,13 +26,13 @@ args = parser.parse_args()
 
 def main():
     # 1. 定义模型对象
-    flg_det = PdxDet(model_path="../model/best/flg_det/", bs=16)
+    flg_det = PdxDet(model_path="../model/best/flg_det/best_model", bs=16)
 
     for vid_name in tqdm(os.listdir(args.input)):
         print(vid_name)
         video = Stream(
             osp.join(args.input, vid_name),
-            itv_sparse=100,
+            itv_sparse=25,
             itv_dense=3,
         )
         for fidx, img in video:
@@ -54,8 +54,8 @@ def main():
                 )
                 print(img_path)
                 # img_file = crop(f, flg.square(256))[1].tofile(img_path)
-                # cv2.imencode(".png", img)
-                cv2.imwrite(img_path, crop(frame, flg.square(256)))
+                cv2.imencode(".png", img)[1].tofile(img_path)   # windows下使用防乱码
+                # cv2.imwrite(img_path, crop(frame, flg.square(256)))
 
 
 if __name__ == "__main__":
