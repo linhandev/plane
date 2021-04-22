@@ -37,7 +37,6 @@ def main():
 
         video = Stream(
             osp.join(args.input, vid_name),
-            osp.join(args.time, "time_mark.CSV"),
             itv_sparse=3,
             itv_dense=3,
         )
